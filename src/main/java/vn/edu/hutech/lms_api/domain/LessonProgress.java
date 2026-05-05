@@ -1,0 +1,33 @@
+package vn.edu.hutech.lms_api.domain;
+
+import jakarta.persistence.*;
+import lombok.*;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "lesson_progress")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class LessonProgress {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "enrollment_id", nullable = false)
+    private Enrollment enrollment;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "lesson_id", nullable = false)
+    private Lesson lesson;
+
+    @Column(name = "is_completed")
+    private Boolean isCompleted;
+
+    @Column(name = "completed_at")
+    private LocalDateTime completedAt;
+}
