@@ -62,4 +62,38 @@ public class LessonServiceImpl implements LessonService {
                 .createdAt(lesson.getCreatedAt())
                 .build();
     }
+
+
+    @Override
+    public LessonResponseDTO getLessonById(Long id) {
+        Lesson lesson = lessonRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy Bài học với ID: " + id));
+        return mapToResponseDTO(lesson);
+    }
+
+    @Override
+    public LessonResponseDTO updateLesson(Long id, LessonRequestDTO requestDTO) {
+        Lesson existingLesson = lessonRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy Bài học với ID: " + id));
+
+        Module module = moduleRepository.findById(requestDTO.getModuleId())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy Chương học với ID: " + requestDTO.getModuleId()));
+
+        existingLesson.setTitle(requestDTO.getTitle());
+        existingLesson.setContentType(requestDTO.getContentType());
+        existingLesson.setContentUrl(requestDTO.getContentUrl());
+        existingLesson.setContentBody(requestDTO.getContentBody());
+        existingLesson.setOrderIndex(requestDTO.getOrderIndex());
+        existingLesson.setModule(module);
+
+        Lesson updatedLesson = lessonRepository.save(existingLesson);
+        return mapToResponseDTO(updatedLesson);
+    }
+
+    @Override
+    public void deleteLesson(Long id) {
+        Lesson lesson = lessonRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy Bài học với ID: " + id));
+        lessonRepository.delete(lesson);
+    }
 }

@@ -59,4 +59,34 @@ public class ModuleServiceImpl implements ModuleService {
                 .createdAt(module.getCreatedAt())
                 .build();
     }
+
+    @Override
+    public ModuleResponseDTO getModuleById(Long id) {
+        Module module = moduleRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy Chương học với ID: " + id));
+        return mapToResponseDTO(module);
+    }
+
+    @Override
+    public ModuleResponseDTO updateModule(Long id, ModuleRequestDTO requestDTO) {
+        Module existingModule = moduleRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy Chương học với ID: " + id));
+
+        Course course = courseRepository.findById(requestDTO.getCourseId())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy Khóa học với ID: " + requestDTO.getCourseId()));
+
+        existingModule.setTitle(requestDTO.getTitle());
+        existingModule.setOrderIndex(requestDTO.getOrderIndex());
+        existingModule.setCourse(course);
+
+        Module updatedModule = moduleRepository.save(existingModule);
+        return mapToResponseDTO(updatedModule);
+    }
+
+    @Override
+    public void deleteModule(Long id) {
+        Module module = moduleRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy Chương học với ID: " + id));
+        moduleRepository.delete(module);
+    }
 }

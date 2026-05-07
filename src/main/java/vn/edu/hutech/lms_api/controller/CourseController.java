@@ -30,4 +30,23 @@ public class CourseController {
     public ResponseEntity<List<CourseResponseDTO>> getAllCourses() {
         return ResponseEntity.ok(courseService.getAllCourses());
     }
+
+    // API Lấy chi tiết 1 Khóa học
+    @GetMapping("/{id}")
+    public ResponseEntity<CourseResponseDTO> getCourseById(@PathVariable Long id) {
+        return ResponseEntity.ok(courseService.getCourseById(id));
+    }
+
+    // API Cập nhật Khóa học
+    @PutMapping("/{id}")
+    public ResponseEntity<CourseResponseDTO> updateCourse(@PathVariable Long id, @Valid @RequestBody CourseRequestDTO requestDTO) {
+        return ResponseEntity.ok(courseService.updateCourse(id, requestDTO));
+    }
+
+    // API Xóa Khóa học
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> deleteCourse(@PathVariable Long id) {
+        courseService.deleteCourse(id);
+        return ResponseEntity.ok("Đã xóa thành công Khóa học có ID: " + id);
+    }
 }

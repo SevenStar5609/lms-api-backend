@@ -2,6 +2,9 @@ package vn.edu.hutech.lms_api.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -17,14 +20,10 @@ public class Lesson {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "module_id", nullable = false)
-    private Module module;
-
     @Column(nullable = false)
     private String title;
 
-    @Column(name = "content_type", nullable = false, length = 50)
+    @Column(name = "content_type", nullable = false)
     private String contentType;
 
     @Column(name = "content_url")
@@ -36,9 +35,15 @@ public class Lesson {
     @Column(name = "order_index", nullable = false)
     private Integer orderIndex;
 
-    @Column(name = "created_at", insertable = false, updatable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "module_id", nullable = false)
+    private Module module;
+
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at", insertable = false, updatable = false)
+    @UpdateTimestamp
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 }

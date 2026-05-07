@@ -7,4 +7,8 @@ import java.util.List;
 public interface LessonService {
     LessonResponseDTO createLesson(LessonRequestDTO requestDTO);
     List<LessonResponseDTO> getLessonsByModule(Long moduleId);
+
+    LessonResponseDTO getLessonById(Long id);
+    LessonResponseDTO updateLesson(Long id, LessonRequestDTO requestDTO);
+    void deleteLesson(Long id);
 }

@@ -28,4 +28,20 @@ public class LessonController {
     public ResponseEntity<List<LessonResponseDTO>> getLessonsByModule(@PathVariable Long moduleId) {
         return ResponseEntity.ok(lessonService.getLessonsByModule(moduleId));
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<LessonResponseDTO> getLessonById(@PathVariable Long id) {
+        return ResponseEntity.ok(lessonService.getLessonById(id));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<LessonResponseDTO> updateLesson(@PathVariable Long id, @Valid @RequestBody LessonRequestDTO requestDTO) {
+        return ResponseEntity.ok(lessonService.updateLesson(id, requestDTO));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> deleteLesson(@PathVariable Long id) {
+        lessonService.deleteLesson(id);
+        return ResponseEntity.ok("Đã xóa thành công Bài học có ID: " + id);
+    }
 }

@@ -63,4 +63,40 @@ public class CourseServiceImpl implements CourseService {
                 .createdAt(course.getCreatedAt())
                 .build();
     }
+
+    @Override
+    public CourseResponseDTO getCourseById(Long id) {
+        Course course = courseRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy Khóa học với ID: " + id));
+        return mapToResponseDTO(course);
+    }
+
+    @Override
+    public CourseResponseDTO updateCourse(Long id, CourseRequestDTO requestDTO) {
+        // 1. Tìm khóa học cũ
+        Course existingCourse = courseRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy Khóa học với ID: " + id));
+
+        // 2. Kiểm tra giảng viên mới có tồn tại không
+        User instructor = userRepository.findById(requestDTO.getInstructorId())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy Giảng viên với ID: " + requestDTO.getInstructorId()));
+
+        // 3. Cập nhật dữ liệu
+        existingCourse.setTitle(requestDTO.getTitle());
+        existingCourse.setDescription(requestDTO.getDescription());
+        existingCourse.setThumbnailUrl(requestDTO.getThumbnailUrl());
+        existingCourse.setStatus(requestDTO.getStatus() != null ? requestDTO.getStatus() : "DRAFT");
+        existingCourse.setInstructor(instructor);
+
+        // 4. Lưu lại
+        Course updatedCourse = courseRepository.save(existingCourse);
+        return mapToResponseDTO(updatedCourse);
+    }
+
+    @Override
+    public void deleteCourse(Long id) {
+        Course course = courseRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy Khóa học với ID: " + id));
+        courseRepository.delete(course);
+    }
 }

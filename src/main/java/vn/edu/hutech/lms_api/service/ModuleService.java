@@ -7,4 +7,8 @@ import java.util.List;
 public interface ModuleService {
     ModuleResponseDTO createModule(ModuleRequestDTO requestDTO);
     List<ModuleResponseDTO> getModulesByCourse(Long courseId);
+
+    ModuleResponseDTO getModuleById(Long id);
+    ModuleResponseDTO updateModule(Long id, ModuleRequestDTO requestDTO);
+    void deleteModule(Long id);
 }

@@ -30,4 +30,20 @@ public class ModuleController {
     public ResponseEntity<List<ModuleResponseDTO>> getModulesByCourse(@PathVariable Long courseId) {
         return ResponseEntity.ok(moduleService.getModulesByCourse(courseId));
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ModuleResponseDTO> getModuleById(@PathVariable Long id) {
+        return ResponseEntity.ok(moduleService.getModuleById(id));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ModuleResponseDTO> updateModule(@PathVariable Long id, @Valid @RequestBody ModuleRequestDTO requestDTO) {
+        return ResponseEntity.ok(moduleService.updateModule(id, requestDTO));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> deleteModule(@PathVariable Long id) {
+        moduleService.deleteModule(id);
+        return ResponseEntity.ok("Đã xóa thành công Chương học có ID: " + id);
+    }
 }
