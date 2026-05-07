@@ -124,3 +124,26 @@ o	Service & Controller: Triển khai LessonService và LessonController cho 2 AP
 	GET /api/v1/lessons/module/{moduleId}: Truy xuất danh sách bài học theo từng chương.
 o	Kiểm thử tích hợp (Integration Test): Tiến hành chạy thử nghiệm thông qua giao diện Swagger UI. Xác nhận luồng dữ liệu liên kết 3 cấp độ (Course -> Module -> Lesson) hoạt động ổn định, dữ liệu courseTitle và moduleTitle được ánh xạ chính xác trong Response JSON.
 
+
+IX. Giai đoạn 9: Xây dựng Hệ thống Bài kiểm tra (Quiz) & Ngân hàng câu hỏi (Question)
+Cấu trúc dữ liệu & Xử lý sự cố đồng bộ (Schema Validation):
+
+Phát hiện và tự chủ động khắc phục lỗi bất đồng bộ giữa file khởi tạo cơ sở dữ liệu (V1__Init_Database.sql) và các file Entity của Hibernate.
+
+Khởi tạo thành công Quiz Entity để quản lý cấu trúc bài kiểm tra trực thuộc Khóa học (Course).
+
+Điều chỉnh và mapping lại Question Entity: Chuyển đổi khóa ngoại sang bảng quizzes để đảm bảo chuẩn thiết kế Database hệ thống LMS ban đầu.
+
+Tích hợp kỹ thuật nâng cao với kiểu dữ liệu JSONB:
+
+Khai thác sức mạnh của PostgreSQL bằng cách áp dụng kiểu dữ liệu JSONB cho trường đáp án trắc nghiệm (options).
+
+Cấu hình thành công bộ chuyển đổi @JdbcTypeCode(SqlTypes.JSON) để map tự động dữ liệu jsonb từ Database sang kiểu Map<String, String> trong Java, giúp cấu trúc lưu trữ câu hỏi cực kỳ linh hoạt mà không cần tạo thêm bảng phụ gây nặng hệ thống.
+
+Hoàn thiện API Full CRUD & Kiểm thử:
+
+Xây dựng trọn vẹn luồng DTO -> Repository -> Service -> Controller cho Câu hỏi.
+
+Đã mở các endpoint: Tạo mới (POST), Lấy danh sách theo Quiz (GET), Lấy chi tiết (GET), Cập nhật (PUT) và Xóa (DELETE).
+
+Thực hiện test thành công luồng truyền tải JSON lồng nhau phức tạp thông qua giao diện hệ thống Swagger UI.
