@@ -2,6 +2,8 @@ package vn.edu.hutech.lms_api.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -25,12 +27,13 @@ public class Certificate {
     @JoinColumn(name = "course_id", nullable = false)
     private Course course;
 
-    @Column(name = "certificate_code", nullable = false, unique = true, length = 100)
+    @Column(name = "certificate_code", length = 100, unique = true, nullable = false)
     private String certificateCode;
 
-    @Column(name = "pdf_url", nullable = false)
+    @Column(name = "pdf_url", length = 255, nullable = false)
     private String pdfUrl;
 
-    @Column(name = "issued_at", insertable = false, updatable = false)
+    @CreationTimestamp
+    @Column(name = "issued_at", updatable = false)
     private LocalDateTime issuedAt;
 }

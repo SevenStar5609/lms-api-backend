@@ -10,4 +10,6 @@ public interface EnrollmentService {
     List<EnrollmentResponseDTO> getUserEnrollments(Long userId);
     EnrollmentResponseDTO updateEnrollment(Long id, EnrollmentUpdateRequestDTO requestDTO);
     void deleteEnrollment(Long id);
+    // Trả về số phần trăm tiến độ mới sau khi cập nhật
+    Double markLessonAsCompleted(Long enrollmentId, Long lessonId);
 }
