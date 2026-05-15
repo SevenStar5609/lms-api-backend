@@ -11,4 +11,7 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 
     // Tìm danh sách bài học theo ID chương học, sắp xếp theo thứ tự orderIndex
     List<Lesson> findByModuleIdOrderByOrderIndexAsc(Long moduleId);
+
+    // Đếm tổng số bài học trong một khóa học (thông qua Module)
+    long countByModule_Course_Id(Long courseId);
 }

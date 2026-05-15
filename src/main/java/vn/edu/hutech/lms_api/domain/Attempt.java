@@ -2,8 +2,10 @@ package vn.edu.hutech.lms_api.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+
 import java.time.LocalDateTime;
 import java.util.Map;
 
@@ -29,16 +31,16 @@ public class Attempt {
     private Quiz quiz;
 
     @Column(nullable = false)
-    private Integer score;
+    private Integer score; // Điểm số thực tế (VD: 80/100)
 
-    // Lưu lại chi tiết đáp án mà user đã chọn dưới dạng JSON
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "user_answers", columnDefinition = "jsonb", nullable = false)
-    private Map<String, String> userAnswers;
+    private Map<Long, String> userAnswers; // Lưu: { "id_câu_hỏi": "đáp_án_chọn" }
 
-    @Column(nullable = false, length = 50)
-    private String status;
+    @Column(nullable = false)
+    private String status; // PASSED hoặc FAILED
 
-    @Column(name = "submitted_at", insertable = false, updatable = false)
+    @CreationTimestamp
+    @Column(name = "submitted_at", updatable = false)
     private LocalDateTime submittedAt;
 }

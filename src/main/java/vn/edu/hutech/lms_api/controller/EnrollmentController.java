@@ -46,4 +46,14 @@ public class EnrollmentController {
         enrollmentService.deleteEnrollment(id);
         return ResponseEntity.ok("Đã hủy ghi danh thành công ID: " + id);
     }
+
+    // API Đánh dấu hoàn thành bài học
+    @PostMapping("/{enrollmentId}/lessons/{lessonId}/complete")
+    public ResponseEntity<String> markLessonAsCompleted(
+            @PathVariable Long enrollmentId,
+            @PathVariable Long lessonId) {
+
+        Double newProgress = enrollmentService.markLessonAsCompleted(enrollmentId, lessonId);
+        return ResponseEntity.ok("Đã hoàn thành bài học. Tiến độ hiện tại: " + newProgress + "%");
+    }
 }
