@@ -11,4 +11,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     // Thêm dòng này: Spring Data JPA sẽ tự động dịch nó thành câu lệnh SQL "SELECT * FROM users WHERE email = ?"
     Optional<User> findByEmail(String email);
+    // Đếm tổng số lượng user có role cụ thể (VD: LEARNER)
+    long countByRole(String role);
 }

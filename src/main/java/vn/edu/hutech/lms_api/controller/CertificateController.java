@@ -18,10 +18,10 @@ public class CertificateController {
 
     private final CertificateService certificateService;
 
-    // API Cấp chứng chỉ mới
-    @PostMapping("/issue")
-    public ResponseEntity<CertificateResponseDTO> issueCertificate(@Valid @RequestBody CertificateRequestDTO requestDTO) {
-        return new ResponseEntity<>(certificateService.issueCertificate(requestDTO), HttpStatus.CREATED);
+    // API Cấp chứng chỉ
+    @PostMapping("/issue/{courseId}")
+    public ResponseEntity<CertificateResponseDTO> issueCertificate(@PathVariable Long courseId) {
+        return ResponseEntity.ok(certificateService.issueCertificate(courseId));
     }
 
     // API Lấy danh sách chứng chỉ của 1 học viên

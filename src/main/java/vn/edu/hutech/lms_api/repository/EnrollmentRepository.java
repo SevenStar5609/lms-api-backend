@@ -15,4 +15,7 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
 
     // Lấy danh sách các khóa học mà một user đã đăng ký
     List<Enrollment> findByUserId(Long userId);
+
+    // Đếm tổng số lượt ghi danh có trạng thái cụ thể (VD: COMPLETED)
+    long countByStatus(String status);
 }

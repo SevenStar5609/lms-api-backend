@@ -1,0 +1,46 @@
+package vn.edu.hutech.lms_api.service;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import vn.edu.hutech.lms_api.dto.dashboard.DashboardResponseDTO;
+import vn.edu.hutech.lms_api.repository.AttemptRepository;
+import vn.edu.hutech.lms_api.repository.EnrollmentRepository;
+import vn.edu.hutech.lms_api.repository.UserRepository;
+
+@Service
+@RequiredArgsConstructor
+public class DashboardService {
+
+    private final UserRepository userRepository;
+    private final EnrollmentRepository enrollmentRepository;
+    private final AttemptRepository attemptRepository;
+
+    public DashboardResponseDTO getSystemDashboard() {
+        // 1. Đếm tổng học viên
+        long totalLearners = userRepository.countByRole("LEARNER");
+
+        // 2. Đếm số lượt ghi danh & hoàn thành
+        long totalEnrollments = enrollmentRepository.count();
+        long completedCourses = enrollmentRepository.countByStatus("COMPLETED");
+
+        // 3. Tính tỉ lệ hoàn thành (%)
+        double completionRate = 0.0;
+        if (totalEnrollments > 0) {
+            completionRate = ((double) completedCourses / totalEnrollments) * 100;
+            completionRate = Math.round(completionRate * 100.0) / 100.0; // Làm tròn 2 chữ số
+        }
+
+        // 4. Lấy điểm quiz trung bình
+        double averageScore = attemptRepository.getAverageQuizScore();
+        averageScore = Math.round(averageScore * 100.0) / 100.0; // Làm tròn
+
+        // 5. Đóng gói trả về
+        return DashboardResponseDTO.builder()
+                .totalLearners(totalLearners)
+                .totalEnrollments(totalEnrollments)
+                .completedCourses(completedCourses)
+                .completionRate(completionRate)
+                .averageQuizScore(averageScore)
+                .build();
+    }
+}

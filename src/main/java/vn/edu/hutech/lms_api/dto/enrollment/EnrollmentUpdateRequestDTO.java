@@ -4,7 +4,7 @@ import lombok.Data;
 
 @Data
 public class EnrollmentUpdateRequestDTO {
-    // Chỉ cho phép cập nhật 2 trường này
-    private Double progressPercentage;
-    private String status; // Ví dụ truyền vào: "COMPLETED" hoặc "IN_PROGRESS"
+    // Không bắt buộc phải truyền lên, người dùng muốn cập nhật cái nào thì truyền cái đó
+    private String status;
+    private Double progress;
 }
