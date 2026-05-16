@@ -36,4 +36,12 @@ public class Certificate {
     @CreationTimestamp
     @Column(name = "issued_at", updatable = false)
     private LocalDateTime issuedAt;
+
+    // Nhớ chèn các import này ở trên cùng nếu chưa có:
+    // import org.hibernate.annotations.CreationTimestamp;
+    // import java.time.LocalDateTime;
+
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
 }

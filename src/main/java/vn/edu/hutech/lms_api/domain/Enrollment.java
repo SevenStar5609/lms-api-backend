@@ -2,6 +2,9 @@ package vn.edu.hutech.lms_api.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -25,12 +28,19 @@ public class Enrollment {
     @JoinColumn(name = "course_id", nullable = false)
     private Course course;
 
-    @Column(name = "enrollment_date", insertable = false, updatable = false)
-    private LocalDateTime enrollmentDate;
+    // Cột phần trăm tiến độ
+    @Column(nullable = false)
+    private Double progress;
 
-    @Column(length = 50)
+    // Cột trạng thái ghi danh (VD: ACTIVE, COMPLETED)
+    @Column(nullable = false)
     private String status;
 
-    @Column(name = "progress_percentage")
-    private Double progressPercentage;
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 }

@@ -1,19 +1,23 @@
 package vn.edu.hutech.lms_api.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import vn.edu.hutech.lms_api.domain.Certificate;
 import vn.edu.hutech.lms_api.domain.Course;
+import vn.edu.hutech.lms_api.domain.Enrollment;
 import vn.edu.hutech.lms_api.domain.User;
-import vn.edu.hutech.lms_api.dto.certificate.CertificateRequestDTO;
 import vn.edu.hutech.lms_api.dto.certificate.CertificateResponseDTO;
 import vn.edu.hutech.lms_api.repository.CertificateRepository;
 import vn.edu.hutech.lms_api.repository.CourseRepository;
+import vn.edu.hutech.lms_api.repository.EnrollmentRepository;
 import vn.edu.hutech.lms_api.repository.UserRepository;
 import vn.edu.hutech.lms_api.service.CertificateService;
+import vn.edu.hutech.lms_api.service.PdfGenerationService;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -22,68 +26,121 @@ import java.util.stream.Collectors;
 public class CertificateServiceImpl implements CertificateService {
 
     private final CertificateRepository certificateRepository;
-    private final UserRepository userRepository;
     private final CourseRepository courseRepository;
+    private final UserRepository userRepository;
+    private final EnrollmentRepository enrollmentRepository;
+
+    // Tiêm dịch vụ tạo file PDF vật lý vào hệ thống
+    private final PdfGenerationService pdfGenerationService;
 
     @Override
-    public CertificateResponseDTO issueCertificate(CertificateRequestDTO requestDTO) {
-        User user = userRepository.findById(requestDTO.getUserId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy User"));
+    @Transactional
+    public CertificateResponseDTO issueCertificate(Long courseId) {
+        // 1. Tự động lấy thông tin Học viên đang đăng nhập từ JWT Token
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated() || authentication.getPrincipal().equals("anonymousUser")) {
+            throw new RuntimeException("Bạn cần đăng nhập để thực hiện thao tác này!");
+        }
+        String currentUserEmail = authentication.getName();
+        User currentUser = userRepository.findByEmail(currentUserEmail)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy thông tin tài khoản!"));
 
-        Course course = courseRepository.findById(requestDTO.getCourseId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy Khóa học"));
+        // 2. Kiểm tra Khóa học có tồn tại hay không
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy Khóa học với ID: " + courseId));
 
-        // 1. Kiểm tra xem đã được cấp chứng chỉ chưa
-        Optional<Certificate> existing = certificateRepository.findByUserIdAndCourseId(user.getId(), course.getId());
-        if (existing.isPresent()) {
-            throw new RuntimeException("Học viên này đã được cấp chứng chỉ cho khóa học này rồi!");
+        // 3. Kiểm tra Học viên đã ghi danh và hoàn thành 100% tiến độ chưa
+        Enrollment enrollment = enrollmentRepository.findByUserIdAndCourseId(currentUser.getId(), courseId)
+                .orElseThrow(() -> new RuntimeException("Bạn chưa ghi danh khóa học này!"));
+
+        if (!"COMPLETED".equalsIgnoreCase(enrollment.getStatus()) && enrollment.getProgress() < 100.0) {
+            throw new RuntimeException("Bạn chưa hoàn thành 100% tiến độ khóa học để nhận chứng chỉ!");
         }
 
-        // 2. Tự động sinh mã chứng chỉ độc nhất (Ví dụ: YOOT-CERT-xxxxxx)
-        String uniqueCode = "YOOT-CERT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        // 4. Kiểm tra xem chứng chỉ đã được cấp trước đó chưa (Tránh cấp trùng)
+        if (certificateRepository.findByUserIdAndCourseId(currentUser.getId(), courseId).isPresent()) {
+            throw new RuntimeException("Chứng chỉ cho khóa học này đã được cấp cho bạn trước đó!");
+        }
 
-        // 3. Tạo chứng chỉ
+        // 5. Sinh mã chứng chỉ độc nhất (Ví dụ: YOOT-CERT-A1B2C3D4)
+        String certCode = "YOOT-CERT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+
+        // 6. Kích hoạt cỗ máy in PDF để tạo file vật lý trong thư mục uploads
+        // Loại bỏ dấu tiếng Việt hoặc chuyển sang ký tự không dấu nếu cần để tránh lỗi Font của thư viện PDF
+        String pdfFileName = pdfGenerationService.generateCertificatePdf(
+                currentUser.getFullName(),
+                course.getTitle(),
+                certCode
+        );
+
+        // 7. Tạo đường dẫn tải file (Sử dụng API download file đã làm)
+        String pdfDownloadUrl = "http://localhost:8080/api/v1/files/download/" + pdfFileName;
+
+        // 8. Đóng gói thông tin và lưu vào Cơ sở dữ liệu
         Certificate certificate = Certificate.builder()
-                .user(user)
+                .certificateCode(certCode)
+                .pdfUrl(pdfDownloadUrl)
+                .user(currentUser)
                 .course(course)
-                .certificateCode(uniqueCode)
-                .pdfUrl(requestDTO.getPdfUrl())
                 .build();
 
-        return mapToResponseDTO(certificateRepository.save(certificate));
+        Certificate savedCertificate = certificateRepository.save(certificate);
+
+        return mapToResponseDTO(savedCertificate);
     }
 
     @Override
-    public List<CertificateResponseDTO> getUserCertificates(Long userId) {
-        return certificateRepository.findByUserId(userId).stream()
+    public List<CertificateResponseDTO> getMyCertificates() {
+        // Lấy danh sách tất cả chứng chỉ của riêng học viên đang đăng nhập
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentUserEmail = authentication.getName();
+        User currentUser = userRepository.findByEmail(currentUserEmail)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy thông tin tài khoản!"));
+
+        return certificateRepository.findByUserId(currentUser.getId()).stream()
                 .map(this::mapToResponseDTO)
                 .collect(Collectors.toList());
     }
 
     @Override
     public CertificateResponseDTO getCertificateById(Long id) {
-        Certificate cert = certificateRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy Chứng chỉ"));
-        return mapToResponseDTO(cert);
+        Certificate certificate = certificateRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy dữ liệu chứng chỉ với ID: " + id));
+        return mapToResponseDTO(certificate);
     }
 
     @Override
-    public void revokeCertificate(Long id) {
-        Certificate cert = certificateRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy Chứng chỉ"));
-        certificateRepository.delete(cert);
+    public List<CertificateResponseDTO> getUserCertificates(Long userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new RuntimeException("Không tìm thấy thông tin tài khoản với ID: " + userId);
+        }
+
+        return certificateRepository.findByUserId(userId).stream()
+                .map(this::mapToResponseDTO)
+                .collect(Collectors.toList());
     }
 
-    private CertificateResponseDTO mapToResponseDTO(Certificate cert) {
+    @Override
+    @Transactional
+    public void revokeCertificate(Long id) {
+        if (!certificateRepository.existsById(id)) {
+            throw new RuntimeException("Không tìm thấy dữ liệu chứng chỉ với ID: " + id);
+        }
+
+        certificateRepository.deleteById(id);
+    }
+
+    // Hàm ánh xạ dữ liệu từ Entity sang DTO trả về cho Client
+    private CertificateResponseDTO mapToResponseDTO(Certificate certificate) {
         return CertificateResponseDTO.builder()
-                .id(cert.getId())
-                .userId(cert.getUser().getId())
-                .studentName(cert.getUser().getFullName())
-                .courseId(cert.getCourse().getId())
-                .courseTitle(cert.getCourse().getTitle())
-                .certificateCode(cert.getCertificateCode())
-                .pdfUrl(cert.getPdfUrl())
-                .issuedAt(cert.getIssuedAt())
+                .id(certificate.getId())
+                .certificateCode(certificate.getCertificateCode())
+                .pdfUrl(certificate.getPdfUrl())
+                .userId(certificate.getUser().getId())
+                .userFullName(certificate.getUser().getFullName())
+                .courseId(certificate.getCourse().getId())
+                .courseTitle(certificate.getCourse().getTitle())
+                .createdAt(certificate.getCreatedAt())
                 .build();
     }
 }

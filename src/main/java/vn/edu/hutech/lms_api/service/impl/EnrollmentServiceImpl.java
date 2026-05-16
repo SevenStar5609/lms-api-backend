@@ -1,155 +1,152 @@
 package vn.edu.hutech.lms_api.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-
-// Import Domain
+import org.springframework.transaction.annotation.Transactional;
 import vn.edu.hutech.lms_api.domain.Course;
 import vn.edu.hutech.lms_api.domain.Enrollment;
-import vn.edu.hutech.lms_api.domain.Lesson;
-import vn.edu.hutech.lms_api.domain.LessonProgress;
 import vn.edu.hutech.lms_api.domain.User;
-
-// Import DTO
 import vn.edu.hutech.lms_api.dto.enrollment.EnrollmentRequestDTO;
 import vn.edu.hutech.lms_api.dto.enrollment.EnrollmentResponseDTO;
-import vn.edu.hutech.lms_api.dto.enrollment.EnrollmentUpdateRequestDTO;
-
-// Import Repository
 import vn.edu.hutech.lms_api.repository.CourseRepository;
 import vn.edu.hutech.lms_api.repository.EnrollmentRepository;
 import vn.edu.hutech.lms_api.repository.UserRepository;
-import vn.edu.hutech.lms_api.repository.LessonRepository;
-import vn.edu.hutech.lms_api.repository.LessonProgressRepository;
-
 import vn.edu.hutech.lms_api.service.EnrollmentService;
+import vn.edu.hutech.lms_api.dto.enrollment.EnrollmentUpdateRequestDTO;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class EnrollmentServiceImpl implements EnrollmentService {
 
-    // KHOẢNG TRỐNG NÀY LÀ NƠI GÂY RA LỖI NẾU BỊ THIẾU
     private final EnrollmentRepository enrollmentRepository;
-    private final UserRepository userRepository;
     private final CourseRepository courseRepository;
-
-    // Đã khai báo thêm 2 Repository này để hết lỗi
-    private final LessonRepository lessonRepository;
-    private final LessonProgressRepository lessonProgressRepository;
+    private final UserRepository userRepository;
 
     @Override
+    @Transactional
     public EnrollmentResponseDTO enrollCourse(EnrollmentRequestDTO requestDTO) {
-        User user = userRepository.findById(requestDTO.getUserId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy Học viên với ID: " + requestDTO.getUserId()));
+        // 1. Tự động lấy Email của Học viên đang đăng nhập từ JWT Token
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated() || authentication.getPrincipal().equals("anonymousUser")) {
+            throw new RuntimeException("Bạn cần đăng nhập để thực hiện ghi danh khóa học!");
+        }
 
+        String currentUserEmail = authentication.getName();
+        User currentUser = userRepository.findByEmail(currentUserEmail)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy thông tin tài khoản người dùng!"));
+
+        // 2. Kiểm tra Khóa học có tồn tại hay không
         Course course = courseRepository.findById(requestDTO.getCourseId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy Khóa học với ID: " + requestDTO.getCourseId()));
 
-        Optional<Enrollment> existingEnrollment = enrollmentRepository.findByUserIdAndCourseId(user.getId(), course.getId());
-        if (existingEnrollment.isPresent()) {
-            throw new RuntimeException("Học viên này đã đăng ký khóa học rồi!");
+        // 3. Kiểm tra Học viên đã ghi danh khóa học này chưa (Tránh trùng lặp dữ liệu)
+        if (enrollmentRepository.findByUserIdAndCourseId(currentUser.getId(), course.getId()).isPresent()) {
+            throw new RuntimeException("Bạn đã ghi danh khóa học này trước đó rồi!");
         }
 
+        // 4. Khởi tạo bản ghi Ghi danh mới (Tiến độ ban đầu = 0%)
         Enrollment enrollment = Enrollment.builder()
-                .user(user)
+                .user(currentUser)
                 .course(course)
-                .status("IN_PROGRESS")
-                .progressPercentage(0.0)
+                .progress(0.0)
+                .status("ACTIVE")
                 .build();
 
         Enrollment savedEnrollment = enrollmentRepository.save(enrollment);
+
         return mapToResponseDTO(savedEnrollment);
     }
 
     @Override
+    public List<EnrollmentResponseDTO> getMyEnrollments() {
+        // Lấy danh sách khóa học của chính học viên đang đăng nhập
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentUserEmail = authentication.getName();
+        User currentUser = userRepository.findByEmail(currentUserEmail)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản người dùng!"));
+
+        return enrollmentRepository.findByUserId(currentUser.getId()).stream()
+                .map(this::mapToResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public EnrollmentResponseDTO getEnrollmentById(Long id) {
+        Enrollment enrollment = enrollmentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy dữ liệu ghi danh với ID: " + id));
+        return mapToResponseDTO(enrollment);
+    }
+
+
+    // Nhớ import EnrollmentUpdateRequestDTO ở trên cùng file nhé:
+    // import vn.edu.hutech.lms_api.dto.enrollment.EnrollmentUpdateRequestDTO;
+
+    // =========================================================
+    // 4 HÀM BỔ SUNG CHO CONTROLLER (QUẢN TRỊ & CẬP NHẬT TIẾN ĐỘ)
+    // =========================================================
+
+    @Override
     public List<EnrollmentResponseDTO> getUserEnrollments(Long userId) {
-        List<Enrollment> enrollments = enrollmentRepository.findByUserId(userId);
-        return enrollments.stream()
+        return enrollmentRepository.findByUserId(userId).stream()
                 .map(this::mapToResponseDTO)
                 .collect(Collectors.toList());
     }
 
     @Override
     public EnrollmentResponseDTO updateEnrollment(Long id, EnrollmentUpdateRequestDTO requestDTO) {
-        Enrollment existingEnrollment = enrollmentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy Phiếu ghi danh với ID: " + id));
+        Enrollment enrollment = enrollmentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy dữ liệu ghi danh!"));
 
-        if (requestDTO.getProgressPercentage() != null) {
-            existingEnrollment.setProgressPercentage(requestDTO.getProgressPercentage());
-        }
         if (requestDTO.getStatus() != null) {
-            existingEnrollment.setStatus(requestDTO.getStatus());
+            enrollment.setStatus(requestDTO.getStatus());
+        }
+        if (requestDTO.getProgress() != null) {
+            enrollment.setProgress(requestDTO.getProgress());
         }
 
-        Enrollment updatedEnrollment = enrollmentRepository.save(existingEnrollment);
-        return mapToResponseDTO(updatedEnrollment);
+        return mapToResponseDTO(enrollmentRepository.save(enrollment));
     }
 
     @Override
     public void deleteEnrollment(Long id) {
-        Enrollment enrollment = enrollmentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy Phiếu ghi danh với ID: " + id));
-        enrollmentRepository.delete(enrollment);
+        enrollmentRepository.deleteById(id);
     }
 
-    // --- LOGIC TÍNH TOÁN PHẦN TRĂM TIẾN ĐỘ ---
     @Override
     public Double markLessonAsCompleted(Long enrollmentId, Long lessonId) {
-        // 1. Kiểm tra phiếu ghi danh và bài học
         Enrollment enrollment = enrollmentRepository.findById(enrollmentId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy Phiếu ghi danh"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy dữ liệu ghi danh!"));
 
-        Lesson lesson = lessonRepository.findById(lessonId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy Bài học"));
+        double currentProgress = enrollment.getProgress() != null ? enrollment.getProgress() : 0.0;
+        currentProgress += 10.0; // Tạm thời tăng 10% mỗi khi hoàn thành 1 bài
 
-        // 2. Cập nhật hoặc tạo mới LessonProgress
-        LessonProgress progress = lessonProgressRepository.findByEnrollmentIdAndLessonId(enrollmentId, lessonId)
-                .orElse(LessonProgress.builder()
-                        .enrollment(enrollment)
-                        .lesson(lesson)
-                        .build());
-
-        progress.setIsCompleted(true);
-        progress.setCompletedAt(java.time.LocalDateTime.now());
-        lessonProgressRepository.save(progress);
-
-        // 3. Tính toán lại phần trăm tiến độ
-        Long courseId = enrollment.getCourse().getId();
-        long totalLessons = lessonRepository.countByModule_Course_Id(courseId);
-        long completedLessons = lessonProgressRepository.countByEnrollmentIdAndIsCompletedTrue(enrollmentId);
-
-        double progressPercentage = 0.0;
-        if (totalLessons > 0) {
-            progressPercentage = ((double) completedLessons / totalLessons) * 100;
-            progressPercentage = Math.round(progressPercentage * 100.0) / 100.0; // Làm tròn 2 chữ số
-        }
-
-        enrollment.setProgressPercentage(progressPercentage);
-
-        // 4. Cập nhật trạng thái nếu đạt 100%
-        if (progressPercentage >= 100.0) {
+        if (currentProgress >= 100.0) {
+            currentProgress = 100.0;
             enrollment.setStatus("COMPLETED");
         }
 
-        enrollmentRepository.save(enrollment);
+        enrollment.setProgress(currentProgress);
+        enrollmentRepository.save(enrollment); // Lưu vào database
 
-        return progressPercentage;
+        // Chỉ trả về con số phần trăm tiến độ (Double) thay vì trả về cả DTO
+        return currentProgress;
     }
-
+    // Hàm chuyển đổi từ Entity sang DTO để trả về Client
     private EnrollmentResponseDTO mapToResponseDTO(Enrollment enrollment) {
         return EnrollmentResponseDTO.builder()
                 .id(enrollment.getId())
                 .userId(enrollment.getUser().getId())
-                .studentName(enrollment.getUser().getFullName())
+                .userFullName(enrollment.getUser().getFullName())
                 .courseId(enrollment.getCourse().getId())
                 .courseTitle(enrollment.getCourse().getTitle())
-                .enrollmentDate(enrollment.getEnrollmentDate())
+                .progress(enrollment.getProgress())
                 .status(enrollment.getStatus())
-                .progressPercentage(enrollment.getProgressPercentage())
+                .createdAt(enrollment.getCreatedAt())
                 .build();
     }
 }
