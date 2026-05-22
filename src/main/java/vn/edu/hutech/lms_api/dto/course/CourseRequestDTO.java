@@ -19,4 +19,7 @@ public class CourseRequestDTO {
     // Khi tạo khóa học, chúng ta chỉ cần truyền lên ID của người dạy,
     // không cần truyền nguyên một object User cồng kềnh.
     private Long instructorId;
+
+    // THÊM DÒNG NÀY VÀO:
+    private Double price;
 }

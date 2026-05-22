@@ -16,38 +16,68 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
-    // Chuỗi bí mật mã hóa (256-bit chuẩn)
     private static final String SECRET_KEY = "404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970";
+    private static final long ACCESS_TOKEN_EXPIRATION_MS = 1000L * 60 * 60 * 24;
+    private static final long REFRESH_TOKEN_EXPIRATION_MS = 1000L * 60 * 60 * 24 * 30;
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
 
+    public String extractTokenType(String token) {
+        return extractClaim(token, claims -> claims.get("type", String.class));
+    }
+
+    public Date extractExpirationDate(String token) {
+        return extractClaim(token, Claims::getExpiration);
+    }
+
     public String generateToken(UserDetails userDetails) {
-        return generateToken(new HashMap<>(), userDetails);
+        return generateAccessToken(userDetails);
     }
 
     public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
-        return Jwts.builder()
-                .claims(extraClaims)                 // Cú pháp mới của 0.12.x
-                .subject(userDetails.getUsername())  // Cú pháp mới
-                .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24)) // Hạn 1 ngày
-                .signWith(getSignInKey())            // Tự động nhận diện thuật toán mã hóa
-                .compact();
+        return generateToken(extraClaims, userDetails, ACCESS_TOKEN_EXPIRATION_MS);
+    }
+
+    public String generateAccessToken(UserDetails userDetails) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("type", "ACCESS");
+        return generateToken(claims, userDetails, ACCESS_TOKEN_EXPIRATION_MS);
+    }
+
+    public String generateRefreshToken(UserDetails userDetails) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("type", "REFRESH");
+        return generateToken(claims, userDetails, REFRESH_TOKEN_EXPIRATION_MS);
     }
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername())) && !isTokenExpired(token);
+        return username.equals(userDetails.getUsername())
+                && !isTokenExpired(token)
+                && "ACCESS".equals(extractTokenType(token));
+    }
+
+    public boolean isRefreshTokenValid(String token, UserDetails userDetails) {
+        final String username = extractUsername(token);
+        return username.equals(userDetails.getUsername())
+                && !isTokenExpired(token)
+                && "REFRESH".equals(extractTokenType(token));
+    }
+
+    private String generateToken(Map<String, Object> extraClaims, UserDetails userDetails, long expirationMs) {
+        return Jwts.builder()
+                .claims(extraClaims)
+                .subject(userDetails.getUsername())
+                .issuedAt(new Date(System.currentTimeMillis()))
+                .expiration(new Date(System.currentTimeMillis() + expirationMs))
+                .signWith(getSignInKey())
+                .compact();
     }
 
     private boolean isTokenExpired(String token) {
-        return extractExpiration(token).before(new Date());
-    }
-
-    private Date extractExpiration(String token) {
-        return extractClaim(token, Claims::getExpiration);
+        return extractExpirationDate(token).before(new Date());
     }
 
     private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
@@ -56,15 +86,15 @@ public class JwtService {
     }
 
     private Claims extractAllClaims(String token) {
-        return Jwts.parser()                             // Bỏ parserBuilder()
-                .verifyWith(getSignInKey())              // Cú pháp verify mới
+        return Jwts.parser()
+                .verifyWith(getSignInKey())
                 .build()
-                .parseSignedClaims(token)                // Bỏ parseClaimsJws()
-                .getPayload();                           // Bỏ getBody()
+                .parseSignedClaims(token)
+                .getPayload();
     }
 
     private SecretKey getSignInKey() {
         byte[] keyBytes = Decoders.BASE64.decode(SECRET_KEY);
-        return Keys.hmacShaKeyFor(keyBytes);             // Trả về SecretKey chuẩn xác
+        return Keys.hmacShaKeyFor(keyBytes);
     }
 }

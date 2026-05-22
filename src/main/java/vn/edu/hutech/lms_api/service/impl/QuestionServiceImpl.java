@@ -1,6 +1,8 @@
 package vn.edu.hutech.lms_api.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import vn.edu.hutech.lms_api.domain.Question;
 import vn.edu.hutech.lms_api.domain.Quiz;
@@ -9,9 +11,6 @@ import vn.edu.hutech.lms_api.dto.question.QuestionResponseDTO;
 import vn.edu.hutech.lms_api.repository.QuestionRepository;
 import vn.edu.hutech.lms_api.repository.QuizRepository;
 import vn.edu.hutech.lms_api.service.QuestionService;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -38,10 +37,9 @@ public class QuestionServiceImpl implements QuestionService {
     }
 
     @Override
-    public List<QuestionResponseDTO> getQuestionsByQuiz(Long quizId) {
-        return questionRepository.findByQuizId(quizId).stream()
-                .map(this::mapToResponseDTO)
-                .collect(Collectors.toList());
+    public Page<QuestionResponseDTO> getQuestionsByQuiz(Long quizId, Pageable pageable) {
+        return questionRepository.findByQuizId(quizId, pageable)
+                .map(this::mapToResponseDTO);
     }
 
     @Override

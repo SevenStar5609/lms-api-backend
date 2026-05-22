@@ -1,23 +1,28 @@
 package vn.edu.hutech.lms_api.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.edu.hutech.lms_api.domain.Course;
 import vn.edu.hutech.lms_api.domain.Enrollment;
+import vn.edu.hutech.lms_api.domain.Lesson;
+import vn.edu.hutech.lms_api.domain.LessonProgress;
 import vn.edu.hutech.lms_api.domain.User;
 import vn.edu.hutech.lms_api.dto.enrollment.EnrollmentRequestDTO;
 import vn.edu.hutech.lms_api.dto.enrollment.EnrollmentResponseDTO;
+import vn.edu.hutech.lms_api.dto.enrollment.EnrollmentUpdateRequestDTO;
 import vn.edu.hutech.lms_api.repository.CourseRepository;
 import vn.edu.hutech.lms_api.repository.EnrollmentRepository;
+import vn.edu.hutech.lms_api.repository.LessonProgressRepository;
+import vn.edu.hutech.lms_api.repository.LessonRepository;
 import vn.edu.hutech.lms_api.repository.UserRepository;
 import vn.edu.hutech.lms_api.service.EnrollmentService;
-import vn.edu.hutech.lms_api.dto.enrollment.EnrollmentUpdateRequestDTO;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -26,30 +31,21 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     private final EnrollmentRepository enrollmentRepository;
     private final CourseRepository courseRepository;
     private final UserRepository userRepository;
+    private final LessonRepository lessonRepository;
+    private final LessonProgressRepository lessonProgressRepository;
 
     @Override
     @Transactional
     public EnrollmentResponseDTO enrollCourse(EnrollmentRequestDTO requestDTO) {
-        // 1. Tự động lấy Email của Học viên đang đăng nhập từ JWT Token
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated() || authentication.getPrincipal().equals("anonymousUser")) {
-            throw new RuntimeException("Bạn cần đăng nhập để thực hiện ghi danh khóa học!");
-        }
+        User currentUser = getCurrentUser();
 
-        String currentUserEmail = authentication.getName();
-        User currentUser = userRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy thông tin tài khoản người dùng!"));
-
-        // 2. Kiểm tra Khóa học có tồn tại hay không
         Course course = courseRepository.findById(requestDTO.getCourseId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy Khóa học với ID: " + requestDTO.getCourseId()));
+                .orElseThrow(() -> new RuntimeException("Khong tim thay khoa hoc voi ID: " + requestDTO.getCourseId()));
 
-        // 3. Kiểm tra Học viên đã ghi danh khóa học này chưa (Tránh trùng lặp dữ liệu)
         if (enrollmentRepository.findByUserIdAndCourseId(currentUser.getId(), course.getId()).isPresent()) {
-            throw new RuntimeException("Bạn đã ghi danh khóa học này trước đó rồi!");
+            throw new RuntimeException("Ban da ghi danh khoa hoc nay truoc do roi!");
         }
 
-        // 4. Khởi tạo bản ghi Ghi danh mới (Tiến độ ban đầu = 0%)
         Enrollment enrollment = Enrollment.builder()
                 .user(currentUser)
                 .course(course)
@@ -57,50 +53,33 @@ public class EnrollmentServiceImpl implements EnrollmentService {
                 .status("ACTIVE")
                 .build();
 
-        Enrollment savedEnrollment = enrollmentRepository.save(enrollment);
-
-        return mapToResponseDTO(savedEnrollment);
+        return mapToResponseDTO(enrollmentRepository.save(enrollment));
     }
 
     @Override
-    public List<EnrollmentResponseDTO> getMyEnrollments() {
-        // Lấy danh sách khóa học của chính học viên đang đăng nhập
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String currentUserEmail = authentication.getName();
-        User currentUser = userRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản người dùng!"));
-
-        return enrollmentRepository.findByUserId(currentUser.getId()).stream()
-                .map(this::mapToResponseDTO)
-                .collect(Collectors.toList());
+    public Page<EnrollmentResponseDTO> getMyEnrollments(Pageable pageable) {
+        User currentUser = getCurrentUser();
+        return enrollmentRepository.findByUserId(currentUser.getId(), pageable)
+                .map(this::mapToResponseDTO);
     }
 
     @Override
     public EnrollmentResponseDTO getEnrollmentById(Long id) {
         Enrollment enrollment = enrollmentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy dữ liệu ghi danh với ID: " + id));
+                .orElseThrow(() -> new RuntimeException("Khong tim thay du lieu ghi danh voi ID: " + id));
         return mapToResponseDTO(enrollment);
     }
 
-
-    // Nhớ import EnrollmentUpdateRequestDTO ở trên cùng file nhé:
-    // import vn.edu.hutech.lms_api.dto.enrollment.EnrollmentUpdateRequestDTO;
-
-    // =========================================================
-    // 4 HÀM BỔ SUNG CHO CONTROLLER (QUẢN TRỊ & CẬP NHẬT TIẾN ĐỘ)
-    // =========================================================
-
     @Override
-    public List<EnrollmentResponseDTO> getUserEnrollments(Long userId) {
-        return enrollmentRepository.findByUserId(userId).stream()
-                .map(this::mapToResponseDTO)
-                .collect(Collectors.toList());
+    public Page<EnrollmentResponseDTO> getUserEnrollments(Long userId, Pageable pageable) {
+        return enrollmentRepository.findByUserId(userId, pageable)
+                .map(this::mapToResponseDTO);
     }
 
     @Override
     public EnrollmentResponseDTO updateEnrollment(Long id, EnrollmentUpdateRequestDTO requestDTO) {
         Enrollment enrollment = enrollmentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy dữ liệu ghi danh!"));
+                .orElseThrow(() -> new RuntimeException("Khong tim thay du lieu ghi danh!"));
 
         if (requestDTO.getStatus() != null) {
             enrollment.setStatus(requestDTO.getStatus());
@@ -118,25 +97,47 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     }
 
     @Override
+    @Transactional
     public Double markLessonAsCompleted(Long enrollmentId, Long lessonId) {
         Enrollment enrollment = enrollmentRepository.findById(enrollmentId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy dữ liệu ghi danh!"));
+                .orElseThrow(() -> new RuntimeException("Khong tim thay du lieu ghi danh!"));
 
-        double currentProgress = enrollment.getProgress() != null ? enrollment.getProgress() : 0.0;
-        currentProgress += 10.0; // Tạm thời tăng 10% mỗi khi hoàn thành 1 bài
+        User currentUser = getCurrentUser();
+        if (!enrollment.getUser().getId().equals(currentUser.getId())) {
+            throw new RuntimeException("Ban khong co quyen cap nhat tien do cua ghi danh nay!");
+        }
 
-        if (currentProgress >= 100.0) {
-            currentProgress = 100.0;
+        Lesson lesson = lessonRepository.findById(lessonId)
+                .orElseThrow(() -> new RuntimeException("Khong tim thay bai hoc voi ID: " + lessonId));
+
+        if (!lesson.getModule().getCourse().getId().equals(enrollment.getCourse().getId())) {
+            throw new RuntimeException("Bai hoc khong thuoc khoa hoc da ghi danh!");
+        }
+
+        LessonProgress lessonProgress = lessonProgressRepository.findByEnrollmentIdAndLessonId(enrollmentId, lessonId)
+                .orElseGet(() -> LessonProgress.builder()
+                        .enrollment(enrollment)
+                        .lesson(lesson)
+                        .build());
+        lessonProgress.setIsCompleted(true);
+        lessonProgress.setCompletedAt(LocalDateTime.now());
+        lessonProgressRepository.save(lessonProgress);
+
+        long totalLessons = lessonRepository.countByModule_Course_Id(enrollment.getCourse().getId());
+        long completedLessons = lessonProgressRepository.countByEnrollmentIdAndIsCompletedTrue(enrollmentId);
+        double progress = totalLessons == 0 ? 0.0 : ((double) completedLessons / totalLessons) * 100.0;
+        progress = Math.round(progress * 100.0) / 100.0;
+
+        if (progress >= 100.0) {
+            progress = 100.0;
             enrollment.setStatus("COMPLETED");
         }
 
-        enrollment.setProgress(currentProgress);
-        enrollmentRepository.save(enrollment); // Lưu vào database
-
-        // Chỉ trả về con số phần trăm tiến độ (Double) thay vì trả về cả DTO
-        return currentProgress;
+        enrollment.setProgress(progress);
+        enrollmentRepository.save(enrollment);
+        return progress;
     }
-    // Hàm chuyển đổi từ Entity sang DTO để trả về Client
+
     private EnrollmentResponseDTO mapToResponseDTO(Enrollment enrollment) {
         return EnrollmentResponseDTO.builder()
                 .id(enrollment.getId())
@@ -148,5 +149,16 @@ public class EnrollmentServiceImpl implements EnrollmentService {
                 .status(enrollment.getStatus())
                 .createdAt(enrollment.getCreatedAt())
                 .build();
+    }
+
+    private User getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            throw new RuntimeException("Ban can dang nhap de thuc hien thao tac nay!");
+        }
+
+        String currentUserEmail = authentication.getName();
+        return userRepository.findByEmail(currentUserEmail)
+                .orElseThrow(() -> new RuntimeException("Khong tim thay thong tin tai khoan!"));
     }
 }

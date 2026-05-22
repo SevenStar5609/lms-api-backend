@@ -1,12 +1,15 @@
 package vn.edu.hutech.lms_api.dto.quiz;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+
 import java.util.Map;
 
 @Data
 public class QuizSubmitRequestDTO {
-    private Long userId;
+    @NotNull(message = "ID bai kiem tra khong duoc de trong")
     private Long quizId;
-    // Map chứa: id câu hỏi -> đáp án học viên chọn (A, B, C...)
+
+    @NotNull(message = "Danh sach dap an khong duoc de trong")
     private Map<Long, String> answers;
 }

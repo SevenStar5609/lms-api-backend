@@ -6,15 +6,14 @@ import lombok.Data;
 
 @Data
 public class QuizRequestDTO {
-    @NotBlank(message = "Tiêu đề bài kiểm tra không được để trống")
+    @NotBlank(message = "Tieu de bai kiem tra khong duoc de trong")
     private String title;
 
-    @NotNull(message = "Điểm qua môn không được để trống")
+    @NotNull(message = "Diem dat khong duoc de trong")
     private Integer passingScore;
 
-    // Thời gian làm bài (có thể null nếu bài thi không giới hạn thời gian)
     private Integer timeLimitMinutes;
 
-    @NotNull(message = "ID Khóa học không được để trống")
-    private Long courseId;
+    @NotNull(message = "ID chuong hoc khong duoc de trong")
+    private Long moduleId;
 }

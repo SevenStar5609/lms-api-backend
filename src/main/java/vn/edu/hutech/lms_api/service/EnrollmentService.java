@@ -1,20 +1,17 @@
 package vn.edu.hutech.lms_api.service;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import vn.edu.hutech.lms_api.dto.enrollment.EnrollmentRequestDTO;
 import vn.edu.hutech.lms_api.dto.enrollment.EnrollmentResponseDTO;
-import vn.edu.hutech.lms_api.dto.enrollment.EnrollmentUpdateRequestDTO; // Thêm import này
-
-import java.util.List;
+import vn.edu.hutech.lms_api.dto.enrollment.EnrollmentUpdateRequestDTO;
 
 public interface EnrollmentService {
     EnrollmentResponseDTO enrollCourse(EnrollmentRequestDTO requestDTO);
-    List<EnrollmentResponseDTO> getMyEnrollments();
+    Page<EnrollmentResponseDTO> getMyEnrollments(Pageable pageable);
     EnrollmentResponseDTO getEnrollmentById(Long id);
-
-    // --- 4 HÀM BỔ SUNG ĐỂ SỬA LỖI BUILD ---
-    List<EnrollmentResponseDTO> getUserEnrollments(Long userId);
+    Page<EnrollmentResponseDTO> getUserEnrollments(Long userId, Pageable pageable);
     EnrollmentResponseDTO updateEnrollment(Long id, EnrollmentUpdateRequestDTO requestDTO);
     void deleteEnrollment(Long id);
-    // Đổi EnrollmentResponseDTO thành Double
     Double markLessonAsCompleted(Long enrollmentId, Long lessonId);
 }

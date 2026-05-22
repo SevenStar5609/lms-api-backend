@@ -1,26 +1,43 @@
 package vn.edu.hutech.lms_api.service;
 
-import com.lowagie.text.*;
+import com.lowagie.text.Chunk;
+import com.lowagie.text.Document;
+import com.lowagie.text.Element;
+import com.lowagie.text.Font;
+import com.lowagie.text.PageSize;
+import com.lowagie.text.Paragraph;
+import com.lowagie.text.Rectangle;
 import com.lowagie.text.pdf.BaseFont;
+import com.lowagie.text.pdf.PdfContentByte;
+import com.lowagie.text.pdf.PdfPCell;
+import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
 
+import java.awt.Color;
 import java.io.FileOutputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 @Service
 public class PdfGenerationService {
+
+    private static final Color NAVY = new Color(21, 45, 85);
+    private static final Color GOLD = new Color(190, 145, 52);
+    private static final Color SOFT_BLUE = new Color(242, 247, 252);
+    private static final Color TEXT = new Color(35, 39, 47);
 
     private final ResourceLoader resourceLoader;
 
     @Value("${file.upload-dir}")
     private String uploadDir;
 
-    // Sử dụng ResourceLoader để tìm tệp phông chữ trong thư mục resources
     public PdfGenerationService(ResourceLoader resourceLoader) {
         this.resourceLoader = resourceLoader;
     }
@@ -30,73 +47,155 @@ public class PdfGenerationService {
         Path filePath = Paths.get(uploadDir, fileName);
 
         try {
-            // Khởi tạo tài liệu A4 nằm ngang
-            Document document = new Document(PageSize.A4.rotate());
-            PdfWriter.getInstance(document, new FileOutputStream(filePath.toFile()));
+            Files.createDirectories(filePath.getParent());
 
+            Document document = new Document(PageSize.A4.rotate(), 56, 56, 46, 42);
+            PdfWriter writer = PdfWriter.getInstance(document, new FileOutputStream(filePath.toFile()));
             document.open();
 
-            // === PHẦN QUAN TRỌNG: CẤU HÌNH PHÔNG CHỮ UNICODE ===
+            BaseFont baseFont = loadUnicodeFont("classpath:fonts/arial.ttf");
+            Font titleFont = new Font(baseFont, 32, Font.BOLD, NAVY);
+            Font subtitleFont = new Font(baseFont, 13, Font.NORMAL, new Color(90, 100, 115));
+            Font labelFont = new Font(baseFont, 14, Font.NORMAL, TEXT);
+            Font nameFont = new Font(baseFont, 30, Font.BOLD, GOLD);
+            Font courseFont = new Font(baseFont, 20, Font.BOLD, NAVY);
+            Font smallFont = new Font(baseFont, 10, Font.NORMAL, new Color(95, 101, 112));
+            Font signatureFont = new Font(baseFont, 11, Font.BOLD, NAVY);
 
-            // 1. Tải tệp phông chữ TTF từ resources (Ví dụ bạn đã bỏ Arial.ttf vào src/main/resources/fonts/)
-            Resource fontResource = resourceLoader.getResource("classpath:fonts/Arial.ttf");
+            drawCertificateFrame(writer);
 
-            // 2. Tạo một BaseFont Unicode (nhớ có BaseFont.IDENTITY_H)
-            BaseFont unicodeBaseFont = BaseFont.createFont(
-                    fontResource.getFile().getAbsolutePath(),
-                    BaseFont.IDENTITY_H, // BẮT BUỘC để hỗ trợ Unicode và hiển thị đúng tiếng Việt
-                    BaseFont.EMBEDDED
-            );
+            Paragraph brand = new Paragraph("HUTECH LMS", new Font(baseFont, 15, Font.BOLD, GOLD));
+            brand.setAlignment(Element.ALIGN_CENTER);
+            brand.setSpacingAfter(8);
+            document.add(brand);
 
-            // 3. Tạo các loại Font Unicode từ BaseFont trên
-            Font titleFont = new Font(unicodeBaseFont, 30, Font.BOLD, java.awt.Color.BLUE);
-            Font normalFont = new Font(unicodeBaseFont, 16, Font.NORMAL, java.awt.Color.BLACK);
-            Font nameFont = new Font(unicodeBaseFont, 24, Font.BOLD, java.awt.Color.RED);
-            Font courseFont = new Font(unicodeBaseFont, 20, Font.BOLD, java.awt.Color.BLACK);
-            Font codeFont = new Font(unicodeBaseFont, 12, Font.NORMAL, java.awt.Color.GRAY);
-
-            // ================================================
-
-            // 1. Tiêu đề
             Paragraph title = new Paragraph("CERTIFICATE OF COMPLETION", titleFont);
             title.setAlignment(Element.ALIGN_CENTER);
-            title.setSpacingAfter(30);
+            title.setSpacingAfter(8);
             document.add(title);
 
-            // 2. Dòng giới thiệu
-            Paragraph text1 = new Paragraph("This is to proudly certify that", normalFont);
-            text1.setAlignment(Element.ALIGN_CENTER);
-            text1.setSpacingAfter(15);
-            document.add(text1);
+            Paragraph subtitle = new Paragraph("This certificate is proudly presented to", subtitleFont);
+            subtitle.setAlignment(Element.ALIGN_CENTER);
+            subtitle.setSpacingAfter(22);
+            document.add(subtitle);
 
-            // 3. Tên học viên (Giờ đây Unicode sẽ hỗ trợ hiển thị đúng "LÊ HỮU HUY")
             Paragraph name = new Paragraph(studentName.toUpperCase(), nameFont);
             name.setAlignment(Element.ALIGN_CENTER);
-            name.setSpacingAfter(15);
+            name.setSpacingAfter(10);
             document.add(name);
 
-            // 4. Lý do cấp
-            Paragraph text2 = new Paragraph("has successfully completed the course:", normalFont);
-            text2.setAlignment(Element.ALIGN_CENTER);
-            text2.setSpacingAfter(15);
-            document.add(text2);
+            Paragraph divider = new Paragraph(new Chunk("____________________________________________", new Font(baseFont, 14, Font.NORMAL, GOLD)));
+            divider.setAlignment(Element.ALIGN_CENTER);
+            divider.setSpacingAfter(18);
+            document.add(divider);
 
-            // 5. Tên khóa học
+            Paragraph text = new Paragraph("has successfully completed the course", labelFont);
+            text.setAlignment(Element.ALIGN_CENTER);
+            text.setSpacingAfter(12);
+            document.add(text);
+
             Paragraph course = new Paragraph(courseName, courseFont);
             course.setAlignment(Element.ALIGN_CENTER);
-            course.setSpacingAfter(50);
+            course.setSpacingAfter(28);
             document.add(course);
 
-            // 6. Mã chứng chỉ ở góc phải
-            Paragraph code = new Paragraph("Certificate Code: " + certCode, codeFont);
-            code.setAlignment(Element.ALIGN_RIGHT);
-            document.add(code);
+            PdfPTable details = new PdfPTable(3);
+            details.setWidthPercentage(82);
+            details.setWidths(new float[]{1.1f, 1.2f, 1.1f});
+            details.setSpacingBefore(10);
+            details.setSpacingAfter(28);
+            details.addCell(detailCell("Issued date", LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")), baseFont));
+            details.addCell(detailCell("Certificate code", certCode, baseFont));
+            details.addCell(detailCell("Verification", "Valid via LMS system", baseFont));
+            document.add(details);
+
+            PdfPTable signatures = new PdfPTable(2);
+            signatures.setWidthPercentage(78);
+            signatures.setWidths(new float[]{1, 1});
+            signatures.addCell(signatureCell("Academic Director", signatureFont, smallFont));
+            signatures.addCell(signatureCell("LMS Administrator", signatureFont, smallFont));
+            document.add(signatures);
+
+            Paragraph footer = new Paragraph("This certificate was generated electronically by HUTECH LMS.", smallFont);
+            footer.setAlignment(Element.ALIGN_CENTER);
+            footer.setSpacingBefore(22);
+            document.add(footer);
 
             document.close();
-
             return fileName;
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi tạo file PDF Chứng chỉ: " + e.getMessage());
+            throw new RuntimeException("Loi khi tao file PDF chung chi: " + e.getMessage());
         }
+    }
+
+    private BaseFont loadUnicodeFont(String location) throws Exception {
+        Resource fontResource = resourceLoader.getResource(location);
+        return BaseFont.createFont(fontResource.getFile().getAbsolutePath(), BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
+    }
+
+    private void drawCertificateFrame(PdfWriter writer) {
+        PdfContentByte canvas = writer.getDirectContentUnder();
+        Rectangle page = PageSize.A4.rotate();
+
+        canvas.saveState();
+        canvas.setColorFill(SOFT_BLUE);
+        canvas.rectangle(0, 0, page.getWidth(), page.getHeight());
+        canvas.fill();
+
+        canvas.setColorFill(Color.WHITE);
+        canvas.roundRectangle(34, 30, page.getWidth() - 68, page.getHeight() - 60, 18);
+        canvas.fill();
+
+        canvas.setColorStroke(NAVY);
+        canvas.setLineWidth(2.4f);
+        canvas.roundRectangle(46, 42, page.getWidth() - 92, page.getHeight() - 84, 14);
+        canvas.stroke();
+
+        canvas.setColorStroke(GOLD);
+        canvas.setLineWidth(1.2f);
+        canvas.roundRectangle(60, 56, page.getWidth() - 120, page.getHeight() - 112, 10);
+        canvas.stroke();
+
+        canvas.setColorFill(new Color(248, 241, 224));
+        canvas.circle(118, page.getHeight() - 104, 38);
+        canvas.fill();
+        canvas.setColorFill(GOLD);
+        canvas.circle(118, page.getHeight() - 104, 27);
+        canvas.fill();
+        canvas.setColorFill(Color.WHITE);
+        canvas.circle(118, page.getHeight() - 104, 19);
+        canvas.fill();
+        canvas.restoreState();
+    }
+
+    private PdfPCell detailCell(String label, String value, BaseFont baseFont) {
+        Font labelFont = new Font(baseFont, 9, Font.NORMAL, new Color(105, 111, 122));
+        Font valueFont = new Font(baseFont, 11, Font.BOLD, NAVY);
+        Paragraph content = new Paragraph();
+        content.setAlignment(Element.ALIGN_CENTER);
+        content.add(new Chunk(label.toUpperCase() + "\n", labelFont));
+        content.add(new Chunk(value, valueFont));
+
+        PdfPCell cell = new PdfPCell(content);
+        cell.setPadding(12);
+        cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        cell.setBorderColor(new Color(224, 228, 236));
+        cell.setBackgroundColor(new Color(250, 252, 255));
+        return cell;
+    }
+
+    private PdfPCell signatureCell(String title, Font titleFont, Font smallFont) {
+        Paragraph content = new Paragraph();
+        content.setAlignment(Element.ALIGN_CENTER);
+        content.add(new Chunk("__________________________\n", smallFont));
+        content.add(new Chunk(title + "\n", titleFont));
+        content.add(new Chunk("Authorized signature", smallFont));
+
+        PdfPCell cell = new PdfPCell(content);
+        cell.setBorder(Rectangle.NO_BORDER);
+        cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        cell.setPaddingTop(10);
+        return cell;
     }
 }

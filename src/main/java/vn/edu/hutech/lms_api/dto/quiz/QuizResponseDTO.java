@@ -13,6 +13,8 @@ public class QuizResponseDTO {
     private Integer passingScore;
     private Integer timeLimitMinutes;
     private Long courseId;
-    private String courseTitle; // Tên khóa học để hiển thị cho đẹp
+    private String courseTitle;
+    private Long moduleId;
+    private String moduleTitle;
     private LocalDateTime createdAt;
 }

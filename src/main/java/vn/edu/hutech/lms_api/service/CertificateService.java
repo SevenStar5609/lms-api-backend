@@ -1,17 +1,13 @@
 package vn.edu.hutech.lms_api.service;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import vn.edu.hutech.lms_api.dto.certificate.CertificateResponseDTO;
-import java.util.List;
 
 public interface CertificateService {
-    // Chỉ cần ID khóa học, không cần RequestDTO lằng nhằng nữa
     CertificateResponseDTO issueCertificate(Long courseId);
-
-    List<CertificateResponseDTO> getMyCertificates();
-
-    List<CertificateResponseDTO> getUserCertificates(Long userId);
-
+    Page<CertificateResponseDTO> getMyCertificates(Pageable pageable);
+    Page<CertificateResponseDTO> getUserCertificates(Long userId, Pageable pageable);
     CertificateResponseDTO getCertificateById(Long id);
-
     void revokeCertificate(Long id);
 }
