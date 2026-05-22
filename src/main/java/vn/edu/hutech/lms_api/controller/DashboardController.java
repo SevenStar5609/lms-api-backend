@@ -18,6 +18,7 @@ public class DashboardController {
 
     // Chỉ ADMIN hoặc INSTRUCTOR mới được phép xem thống kê này
     @GetMapping
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<DashboardResponseDTO> getDashboardData() {
         return ResponseEntity.ok(dashboardService.getSystemDashboard());
     }

@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import vn.edu.hutech.lms_api.dto.auth.AuthResponseDTO;
 import vn.edu.hutech.lms_api.dto.auth.LoginRequestDTO;
+import vn.edu.hutech.lms_api.dto.auth.RefreshTokenRequestDTO;
 import vn.edu.hutech.lms_api.dto.auth.RegisterRequestDTO;
 import vn.edu.hutech.lms_api.service.AuthService;
 
@@ -27,5 +28,10 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponseDTO> login(@Valid @RequestBody LoginRequestDTO request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponseDTO> refresh(@Valid @RequestBody RefreshTokenRequestDTO request) {
+        return ResponseEntity.ok(authService.refresh(request));
     }
 }

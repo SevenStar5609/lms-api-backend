@@ -11,6 +11,7 @@ public class CourseResponseDTO {
     private String title;
     private String description;
     private String thumbnailUrl;
+    private Double price;
     private String status;
     private String instructorName; // Chỉ trả về tên người dạy, giấu ID và Email đi
     private LocalDateTime createdAt;

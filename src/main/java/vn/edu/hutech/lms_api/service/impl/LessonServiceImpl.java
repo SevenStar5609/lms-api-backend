@@ -1,6 +1,8 @@
 package vn.edu.hutech.lms_api.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -16,9 +18,7 @@ import vn.edu.hutech.lms_api.repository.ModuleRepository;
 import vn.edu.hutech.lms_api.repository.UserRepository;
 import vn.edu.hutech.lms_api.service.LessonService;
 
-import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +39,7 @@ public class LessonServiceImpl implements LessonService {
         Lesson lesson = Lesson.builder()
                 .title(requestDTO.getTitle())
                 .contentUrl(requestDTO.getContentUrl())
+                .contentBody(requestDTO.getContentBody())
                 .contentType(requestDTO.getContentType())
                 .orderIndex(requestDTO.getOrderIndex())
                 .module(module)
@@ -48,16 +49,15 @@ public class LessonServiceImpl implements LessonService {
     }
 
     @Override
-    public List<LessonResponseDTO> getLessonsByModule(Long moduleId) {
+    public Page<LessonResponseDTO> getLessonsByModule(Long moduleId, Pageable pageable) {
         Module module = moduleRepository.findById(moduleId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy Chương học"));
 
         // KIỂM TRA BẢO MẬT TRƯỚC KHI TRẢ VỀ DANH SÁCH BÀI HỌC
         checkUserAccessToCourse(module.getCourse().getId());
 
-        return lessonRepository.findByModuleIdOrderByOrderIndexAsc(moduleId).stream()
-                .map(this::mapToResponseDTO)
-                .collect(Collectors.toList());
+        return lessonRepository.findByModuleIdOrderByOrderIndexAsc(moduleId, pageable)
+                .map(this::mapToResponseDTO);
     }
 
     @Override
@@ -81,6 +81,7 @@ public class LessonServiceImpl implements LessonService {
 
         existingLesson.setTitle(requestDTO.getTitle());
         existingLesson.setContentUrl(requestDTO.getContentUrl());
+        existingLesson.setContentBody(requestDTO.getContentBody());
         existingLesson.setContentType(requestDTO.getContentType());
         existingLesson.setOrderIndex(requestDTO.getOrderIndex());
         existingLesson.setModule(module);
@@ -126,10 +127,12 @@ public class LessonServiceImpl implements LessonService {
                 .id(lesson.getId())
                 .title(lesson.getTitle())
                 .contentUrl(lesson.getContentUrl())
+                .contentBody(lesson.getContentBody())
                 .contentType(lesson.getContentType())
                 .orderIndex(lesson.getOrderIndex())
                 .moduleId(lesson.getModule().getId())
                 .moduleTitle(lesson.getModule().getTitle())
+                .createdAt(lesson.getCreatedAt())
                 .build();
     }
 }

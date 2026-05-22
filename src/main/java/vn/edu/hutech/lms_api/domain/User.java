@@ -40,6 +40,12 @@ public class User implements UserDetails { // Đã thêm implements UserDetails
     @Column(name = "is_active")
     private Boolean isActive;
 
+    @Column(name = "refresh_token", columnDefinition = "TEXT")
+    private String refreshToken;
+
+    @Column(name = "refresh_token_expires_at")
+    private LocalDateTime refreshTokenExpiresAt;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
