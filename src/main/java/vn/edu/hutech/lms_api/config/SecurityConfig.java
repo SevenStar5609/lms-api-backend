@@ -40,7 +40,6 @@ public class SecurityConfig {
                                 "/api/v1/modules/**",
                                 "/api/v1/lessons/**",
                                 "/api/v1/quizzes/**",
-                                "/api/v1/questions/**",
                                 "/api/v1/certificates/**"
                         ).authenticated()
                         .requestMatchers("/api/v1/courses/**", "/api/v1/modules/**", "/api/v1/lessons/**").hasAnyRole("INSTRUCTOR", "ADMIN")

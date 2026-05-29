@@ -3,16 +3,17 @@ package vn.edu.hutech.lms_api.service.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import vn.edu.hutech.lms_api.domain.Course;
 import vn.edu.hutech.lms_api.domain.User;
 import vn.edu.hutech.lms_api.dto.course.CourseRequestDTO;
 import vn.edu.hutech.lms_api.dto.course.CourseResponseDTO;
 import vn.edu.hutech.lms_api.repository.CourseRepository;
+import vn.edu.hutech.lms_api.repository.ModuleRepository;
 import vn.edu.hutech.lms_api.repository.UserRepository;
 import vn.edu.hutech.lms_api.service.CourseService;
 
@@ -21,6 +22,7 @@ import vn.edu.hutech.lms_api.service.CourseService;
 public class CourseServiceImpl implements CourseService {
 
     private final CourseRepository courseRepository;
+    private final ModuleRepository moduleRepository;
     private final UserRepository userRepository;
     private final JdbcTemplate jdbcTemplate;
 
@@ -32,7 +34,8 @@ public class CourseServiceImpl implements CourseService {
                 .title(requestDTO.getTitle())
                 .description(requestDTO.getDescription())
                 .thumbnailUrl(requestDTO.getThumbnailUrl())
-                .price(requestDTO.getPrice())
+                .duration(requestDTO.getDuration())
+                .sessionCount(requestDTO.getSessionCount())
                 .status(requestDTO.getStatus() != null ? requestDTO.getStatus() : "DRAFT")
                 .instructor(instructor)
                 .build();
@@ -65,7 +68,8 @@ public class CourseServiceImpl implements CourseService {
         existingCourse.setTitle(requestDTO.getTitle());
         existingCourse.setDescription(requestDTO.getDescription());
         existingCourse.setThumbnailUrl(requestDTO.getThumbnailUrl());
-        existingCourse.setPrice(requestDTO.getPrice());
+        existingCourse.setDuration(requestDTO.getDuration());
+        existingCourse.setSessionCount(requestDTO.getSessionCount());
         existingCourse.setStatus(requestDTO.getStatus() != null ? requestDTO.getStatus() : "DRAFT");
         existingCourse.setInstructor(instructor);
 
@@ -78,16 +82,14 @@ public class CourseServiceImpl implements CourseService {
         Course course = courseRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Khong tim thay khoa hoc voi ID: " + id));
         courseRepository.delete(course);
+        courseRepository.flush();
 
-        // Nếu không còn course nào, reset sequence để ID có thể bắt đầu lại từ 1
+        if (moduleRepository.count() == 0) {
+            resetSequence("modules_id_seq");
+        }
+
         if (courseRepository.count() == 0) {
-            try {
-                jdbcTemplate.execute("ALTER SEQUENCE courses_id_seq RESTART WITH 1");
-            } catch (Exception ex) {
-                // Khong quan trong neu database khong phai Postgres hoac sequence khong ton tai
-                // Log nếu cần - hiện tại ném runtime để dễ debug trong môi trường dev
-                throw new RuntimeException("Loi khi reset sequence courses_id_seq: " + ex.getMessage(), ex);
-            }
+            resetSequence("courses_id_seq");
         }
     }
 
@@ -97,11 +99,20 @@ public class CourseServiceImpl implements CourseService {
                 .title(course.getTitle())
                 .description(course.getDescription())
                 .thumbnailUrl(course.getThumbnailUrl())
-                .price(course.getPrice())
+                .duration(course.getDuration())
+                .sessionCount(course.getSessionCount())
                 .status(course.getStatus())
                 .instructorName(course.getInstructor() != null ? course.getInstructor().getFullName() : null)
                 .createdAt(course.getCreatedAt())
                 .build();
+    }
+
+    private void resetSequence(String sequenceName) {
+        try {
+            jdbcTemplate.execute("ALTER SEQUENCE " + sequenceName + " RESTART WITH 1");
+        } catch (Exception ex) {
+            throw new RuntimeException("Loi khi reset sequence " + sequenceName + ": " + ex.getMessage(), ex);
+        }
     }
 
     private User getCurrentUser() {
