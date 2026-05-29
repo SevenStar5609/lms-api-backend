@@ -6,6 +6,7 @@ import vn.edu.hutech.lms_api.dto.quiz.QuizRequestDTO;
 import vn.edu.hutech.lms_api.dto.quiz.QuizResponseDTO;
 import vn.edu.hutech.lms_api.dto.quiz.QuizResultResponseDTO;
 import vn.edu.hutech.lms_api.dto.quiz.QuizSubmitRequestDTO;
+import vn.edu.hutech.lms_api.dto.question.QuestionForQuizResponseDTO;
 
 public interface QuizService {
     QuizResponseDTO createQuiz(QuizRequestDTO requestDTO);
@@ -16,4 +17,5 @@ public interface QuizService {
     void deleteQuiz(Long id);
     QuizResultResponseDTO submitQuiz(QuizSubmitRequestDTO requestDTO);
     QuizResultResponseDTO getAttemptResult(Long attemptId);
+    Page<QuestionForQuizResponseDTO> getQuestionsForQuiz(Long quizId, Pageable pageable);
 }

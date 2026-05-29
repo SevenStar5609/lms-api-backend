@@ -20,6 +20,7 @@ public class CourseRequestDTO {
     // không cần truyền nguyên một object User cồng kềnh.
     private Long instructorId;
 
-    // THÊM DÒNG NÀY VÀO:
-    private Double price;
+    private String duration;
+
+    private Integer sessionCount;
 }

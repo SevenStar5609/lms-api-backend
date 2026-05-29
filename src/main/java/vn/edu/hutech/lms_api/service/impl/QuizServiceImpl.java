@@ -11,6 +11,7 @@ import vn.edu.hutech.lms_api.domain.Module;
 import vn.edu.hutech.lms_api.domain.Question;
 import vn.edu.hutech.lms_api.domain.Quiz;
 import vn.edu.hutech.lms_api.domain.User;
+import vn.edu.hutech.lms_api.dto.question.QuestionForQuizResponseDTO;
 import vn.edu.hutech.lms_api.dto.quiz.QuizRequestDTO;
 import vn.edu.hutech.lms_api.dto.quiz.QuizResponseDTO;
 import vn.edu.hutech.lms_api.dto.quiz.QuizResultResponseDTO;
@@ -148,6 +149,16 @@ public class QuizServiceImpl implements QuizService {
         return mapAttemptToResult(attempt, questions.size(), correctCount);
     }
 
+    @Override
+    public Page<QuestionForQuizResponseDTO> getQuestionsForQuiz(Long quizId, Pageable pageable) {
+        if (!quizRepository.existsById(quizId)) {
+            throw new RuntimeException("Khong tim thay bai kiem tra voi ID: " + quizId);
+        }
+
+        return questionRepository.findByQuizId(quizId, pageable)
+                .map(this::mapToQuestionForQuizResponseDTO);
+    }
+
     private QuizResponseDTO mapToResponseDTO(Quiz quiz) {
         Module module = quiz.getModule();
         return QuizResponseDTO.builder()
@@ -160,6 +171,15 @@ public class QuizServiceImpl implements QuizService {
                 .moduleId(module != null ? module.getId() : null)
                 .moduleTitle(module != null ? module.getTitle() : null)
                 .createdAt(quiz.getCreatedAt())
+                .build();
+    }
+
+    private QuestionForQuizResponseDTO mapToQuestionForQuizResponseDTO(Question question) {
+        return QuestionForQuizResponseDTO.builder()
+                .id(question.getId())
+                .content(question.getContent())
+                .options(question.getOptions())
+                .quizId(question.getQuiz().getId())
                 .build();
     }
 

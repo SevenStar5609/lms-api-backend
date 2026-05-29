@@ -26,8 +26,11 @@ public class Course {
     @Column(name = "thumbnail_url")
     private String thumbnailUrl;
 
-    @Column
-    private Double price;
+    @Column(length = 100)
+    private String duration;
+
+    @Column(name = "session_count")
+    private Integer sessionCount;
 
     @Column(length = 50)
     private String status;

@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import vn.edu.hutech.lms_api.dto.question.QuestionForQuizResponseDTO;
 import vn.edu.hutech.lms_api.dto.quiz.QuizRequestDTO;
 import vn.edu.hutech.lms_api.dto.quiz.QuizResponseDTO;
 import vn.edu.hutech.lms_api.dto.quiz.QuizResultResponseDTO;
@@ -38,6 +39,11 @@ public class QuizController {
     @GetMapping("/{id}")
     public ResponseEntity<QuizResponseDTO> getQuizById(@PathVariable Long id) {
         return ResponseEntity.ok(quizService.getQuizById(id));
+    }
+
+    @GetMapping("/{id}/questions")
+    public ResponseEntity<Page<QuestionForQuizResponseDTO>> getQuestionsForQuiz(@PathVariable Long id, Pageable pageable) {
+        return ResponseEntity.ok(quizService.getQuestionsForQuiz(id, pageable));
     }
 
     @PutMapping("/{id}")
