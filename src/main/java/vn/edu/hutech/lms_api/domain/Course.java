@@ -2,6 +2,7 @@ package vn.edu.hutech.lms_api.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -32,6 +33,9 @@ public class Course {
     @Column(name = "session_count")
     private Integer sessionCount;
 
+    @Column(precision = 12, scale = 2)
+    private BigDecimal price;
+
     @Column(length = 50)
     private String status;
 
@@ -50,6 +54,9 @@ public class Course {
 
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
     private java.util.List<Certificate> certificates;
+
+    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<Review> reviews;
 
     @org.hibernate.annotations.CreationTimestamp
     @Column(name = "created_at", updatable = false)

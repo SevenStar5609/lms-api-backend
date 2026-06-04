@@ -44,7 +44,7 @@ public class PdfGenerationService {
 
     public String generateCertificatePdf(String studentName, String courseName, String certCode) {
         String fileName = "CERT_" + certCode + ".pdf";
-        Path filePath = Paths.get(uploadDir, fileName);
+        Path filePath = getCertificatePath(fileName);
 
         try {
             Files.createDirectories(filePath.getParent());
@@ -126,6 +126,10 @@ public class PdfGenerationService {
         } catch (Exception e) {
             throw new RuntimeException("Loi khi tao file PDF chung chi: " + e.getMessage());
         }
+    }
+
+    public Path getCertificatePath(String fileName) {
+        return Paths.get(uploadDir, fileName);
     }
 
     private BaseFont loadUnicodeFont(String location) throws Exception {
