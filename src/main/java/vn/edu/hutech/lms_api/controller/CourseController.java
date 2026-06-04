@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vn.edu.hutech.lms_api.dto.course.CourseRequestDTO;
 import vn.edu.hutech.lms_api.dto.course.CourseResponseDTO;
+import vn.edu.hutech.lms_api.dto.course.CourseSearchCriteria;
 import vn.edu.hutech.lms_api.service.CourseService;
 
 @RestController
@@ -24,8 +25,8 @@ public class CourseController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<CourseResponseDTO>> getAllCourses(Pageable pageable) {
-        return ResponseEntity.ok(courseService.getAllCourses(pageable));
+    public ResponseEntity<Page<CourseResponseDTO>> getAllCourses(CourseSearchCriteria criteria, Pageable pageable) {
+        return ResponseEntity.ok(courseService.getAllCourses(criteria, pageable));
     }
 
     @GetMapping("/{id}")

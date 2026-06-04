@@ -17,8 +17,10 @@ import vn.edu.hutech.lms_api.repository.CourseRepository;
 import vn.edu.hutech.lms_api.repository.EnrollmentRepository;
 import vn.edu.hutech.lms_api.repository.UserRepository;
 import vn.edu.hutech.lms_api.service.CertificateService;
+import vn.edu.hutech.lms_api.service.CloudStorageService;
 import vn.edu.hutech.lms_api.service.PdfGenerationService;
 
+import java.nio.file.Path;
 import java.util.UUID;
 
 @Service
@@ -30,6 +32,7 @@ public class CertificateServiceImpl implements CertificateService {
     private final UserRepository userRepository;
     private final EnrollmentRepository enrollmentRepository;
     private final PdfGenerationService pdfGenerationService;
+    private final CloudStorageService cloudStorageService;
 
     @Override
     @Transactional
@@ -56,10 +59,12 @@ public class CertificateServiceImpl implements CertificateService {
                 course.getTitle(),
                 certCode
         );
+        Path pdfPath = pdfGenerationService.getCertificatePath(pdfFileName);
+        String cloudUrl = cloudStorageService.uploadCertificatePdf(pdfPath, certCode);
 
         Certificate certificate = Certificate.builder()
                 .certificateCode(certCode)
-                .pdfUrl("http://localhost:8080/api/v1/files/download/" + pdfFileName)
+                .pdfUrl(cloudUrl != null ? cloudUrl : "http://localhost:8080/api/v1/files/download/" + pdfFileName)
                 .user(currentUser)
                 .course(course)
                 .build();

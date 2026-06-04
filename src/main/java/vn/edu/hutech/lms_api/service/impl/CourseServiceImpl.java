@@ -12,10 +12,13 @@ import vn.edu.hutech.lms_api.domain.Course;
 import vn.edu.hutech.lms_api.domain.User;
 import vn.edu.hutech.lms_api.dto.course.CourseRequestDTO;
 import vn.edu.hutech.lms_api.dto.course.CourseResponseDTO;
+import vn.edu.hutech.lms_api.dto.course.CourseSearchCriteria;
 import vn.edu.hutech.lms_api.repository.CourseRepository;
 import vn.edu.hutech.lms_api.repository.ModuleRepository;
+import vn.edu.hutech.lms_api.repository.ReviewRepository;
 import vn.edu.hutech.lms_api.repository.UserRepository;
 import vn.edu.hutech.lms_api.service.CourseService;
+import vn.edu.hutech.lms_api.specification.CourseSpecifications;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +27,7 @@ public class CourseServiceImpl implements CourseService {
     private final CourseRepository courseRepository;
     private final ModuleRepository moduleRepository;
     private final UserRepository userRepository;
+    private final ReviewRepository reviewRepository;
     private final JdbcTemplate jdbcTemplate;
 
     @Override
@@ -34,6 +38,7 @@ public class CourseServiceImpl implements CourseService {
                 .title(requestDTO.getTitle())
                 .description(requestDTO.getDescription())
                 .thumbnailUrl(requestDTO.getThumbnailUrl())
+                .price(requestDTO.getPrice())
                 .duration(requestDTO.getDuration())
                 .sessionCount(requestDTO.getSessionCount())
                 .status(requestDTO.getStatus() != null ? requestDTO.getStatus() : "DRAFT")
@@ -44,8 +49,8 @@ public class CourseServiceImpl implements CourseService {
     }
 
     @Override
-    public Page<CourseResponseDTO> getAllCourses(Pageable pageable) {
-        return courseRepository.findAll(pageable).map(this::mapToResponseDTO);
+    public Page<CourseResponseDTO> getAllCourses(CourseSearchCriteria criteria, Pageable pageable) {
+        return courseRepository.findAll(CourseSpecifications.byCriteria(criteria), pageable).map(this::mapToResponseDTO);
     }
 
     @Override
@@ -68,6 +73,7 @@ public class CourseServiceImpl implements CourseService {
         existingCourse.setTitle(requestDTO.getTitle());
         existingCourse.setDescription(requestDTO.getDescription());
         existingCourse.setThumbnailUrl(requestDTO.getThumbnailUrl());
+        existingCourse.setPrice(requestDTO.getPrice());
         existingCourse.setDuration(requestDTO.getDuration());
         existingCourse.setSessionCount(requestDTO.getSessionCount());
         existingCourse.setStatus(requestDTO.getStatus() != null ? requestDTO.getStatus() : "DRAFT");
@@ -99,12 +105,19 @@ public class CourseServiceImpl implements CourseService {
                 .title(course.getTitle())
                 .description(course.getDescription())
                 .thumbnailUrl(course.getThumbnailUrl())
+                .price(course.getPrice())
                 .duration(course.getDuration())
                 .sessionCount(course.getSessionCount())
                 .status(course.getStatus())
                 .instructorName(course.getInstructor() != null ? course.getInstructor().getFullName() : null)
+                .averageRating(round(reviewRepository.getAverageRatingByCourseId(course.getId())))
+                .reviewCount(reviewRepository.countByCourseId(course.getId()))
                 .createdAt(course.getCreatedAt())
                 .build();
+    }
+
+    private double round(double value) {
+        return Math.round(value * 100.0) / 100.0;
     }
 
     private void resetSequence(String sequenceName) {

@@ -1,0 +1,5 @@
+ALTER TABLE courses
+    ADD COLUMN IF NOT EXISTS duration VARCHAR(100);
+
+ALTER TABLE courses
+    ADD COLUMN IF NOT EXISTS session_count INTEGER;

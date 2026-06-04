@@ -6,8 +6,11 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import vn.edu.hutech.lms_api.dto.dashboard.CourseRatingStatsDTO;
 import vn.edu.hutech.lms_api.dto.dashboard.DashboardResponseDTO;
 import vn.edu.hutech.lms_api.service.DashboardService;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/dashboard")
@@ -21,5 +24,11 @@ public class DashboardController {
     @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<DashboardResponseDTO> getDashboardData() {
         return ResponseEntity.ok(dashboardService.getSystemDashboard());
+    }
+
+    @GetMapping("/course-ratings")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
+    public ResponseEntity<List<CourseRatingStatsDTO>> getCourseRatingStats() {
+        return ResponseEntity.ok(dashboardService.getCourseRatingStats());
     }
 }

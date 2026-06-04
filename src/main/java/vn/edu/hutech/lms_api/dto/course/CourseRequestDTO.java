@@ -2,6 +2,7 @@ package vn.edu.hutech.lms_api.dto.course;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
+import java.math.BigDecimal;
 
 @Data
 public class CourseRequestDTO {
@@ -13,6 +14,8 @@ public class CourseRequestDTO {
     private String description;
 
     private String thumbnailUrl;
+
+    private BigDecimal price;
 
     private String status;
 
