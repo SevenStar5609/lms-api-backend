@@ -21,13 +21,13 @@ public class DashboardController {
 
     // Chỉ ADMIN hoặc INSTRUCTOR mới được phép xem thống kê này
     @GetMapping
-    @PreAuthorize("hasRole('INSTRUCTOR')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
     public ResponseEntity<DashboardResponseDTO> getDashboardData() {
         return ResponseEntity.ok(dashboardService.getSystemDashboard());
     }
 
     @GetMapping("/course-ratings")
-    @PreAuthorize("hasRole('INSTRUCTOR')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
     public ResponseEntity<List<CourseRatingStatsDTO>> getCourseRatingStats() {
         return ResponseEntity.ok(dashboardService.getCourseRatingStats());
     }

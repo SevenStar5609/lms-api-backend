@@ -27,6 +27,13 @@ public class GlobalExceptionHandler {
     }
 
     // 2. Bắt lỗi Logic (Ví dụ: Không tìm thấy Giảng viên với ID 999)
+    @ExceptionHandler(ForbiddenOperationException.class)
+    public ResponseEntity<Map<String, String>> handleForbiddenExceptions(ForbiddenOperationException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", ex.getMessage());
+        return new ResponseEntity<>(error, HttpStatus.FORBIDDEN);
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Map<String, String>> handleRuntimeExceptions(RuntimeException ex) {
         Map<String, String> error = new HashMap<>();

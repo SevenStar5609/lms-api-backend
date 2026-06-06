@@ -45,7 +45,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/courses/**", "/api/v1/modules/**", "/api/v1/lessons/**").hasAnyRole("INSTRUCTOR", "ADMIN")
                         .requestMatchers("/api/v1/quizzes/**", "/api/v1/questions/**").hasAnyRole("INSTRUCTOR", "ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/certificates/**").hasRole("ADMIN")
-                        .requestMatchers("/api/v1/dashboard/**").hasRole("INSTRUCTOR")
+                        .requestMatchers("/api/v1/dashboard/**").hasAnyRole("INSTRUCTOR", "ADMIN")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
