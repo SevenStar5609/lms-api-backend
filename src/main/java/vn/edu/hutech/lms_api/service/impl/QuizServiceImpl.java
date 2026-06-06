@@ -16,7 +16,9 @@ import vn.edu.hutech.lms_api.dto.quiz.QuizRequestDTO;
 import vn.edu.hutech.lms_api.dto.quiz.QuizResponseDTO;
 import vn.edu.hutech.lms_api.dto.quiz.QuizResultResponseDTO;
 import vn.edu.hutech.lms_api.dto.quiz.QuizSubmitRequestDTO;
+import vn.edu.hutech.lms_api.exception.ForbiddenOperationException;
 import vn.edu.hutech.lms_api.repository.AttemptRepository;
+import vn.edu.hutech.lms_api.repository.EnrollmentRepository;
 import vn.edu.hutech.lms_api.repository.ModuleRepository;
 import vn.edu.hutech.lms_api.repository.QuestionRepository;
 import vn.edu.hutech.lms_api.repository.QuizRepository;
@@ -34,6 +36,7 @@ public class QuizServiceImpl implements QuizService {
     private final UserRepository userRepository;
     private final QuestionRepository questionRepository;
     private final AttemptRepository attemptRepository;
+    private final EnrollmentRepository enrollmentRepository;
 
     @Override
     public QuizResponseDTO createQuiz(QuizRequestDTO requestDTO) {
@@ -100,6 +103,7 @@ public class QuizServiceImpl implements QuizService {
                 .orElseThrow(() -> new RuntimeException("Khong tim thay bai kiem tra voi ID: " + requestDTO.getQuizId()));
 
         User user = getCurrentUser();
+        checkUserAccessToQuizCourse(user, quiz);
         List<Question> questions = questionRepository.findByQuizId(quiz.getId(), Pageable.unpaged()).getContent();
         int totalQuestions = questions.size();
         int correctCount = 0;
@@ -151,12 +155,23 @@ public class QuizServiceImpl implements QuizService {
 
     @Override
     public Page<QuestionForQuizResponseDTO> getQuestionsForQuiz(Long quizId, Pageable pageable) {
-        if (!quizRepository.existsById(quizId)) {
-            throw new RuntimeException("Khong tim thay bai kiem tra voi ID: " + quizId);
-        }
+        Quiz quiz = quizRepository.findById(quizId)
+                .orElseThrow(() -> new RuntimeException("Khong tim thay bai kiem tra voi ID: " + quizId));
+        checkUserAccessToQuizCourse(getCurrentUser(), quiz);
 
         return questionRepository.findByQuizId(quizId, pageable)
                 .map(this::mapToQuestionForQuizResponseDTO);
+    }
+
+    private void checkUserAccessToQuizCourse(User user, Quiz quiz) {
+        if ("INSTRUCTOR".equalsIgnoreCase(user.getRole()) || "ADMIN".equalsIgnoreCase(user.getRole())) {
+            return;
+        }
+
+        Long courseId = quiz.getCourse().getId();
+        if (enrollmentRepository.findByUserIdAndCourseId(user.getId(), courseId).isEmpty()) {
+            throw new ForbiddenOperationException("Ban chua ghi danh khoa hoc nay nen khong the lam bai kiem tra!");
+        }
     }
 
     private QuizResponseDTO mapToResponseDTO(Quiz quiz) {

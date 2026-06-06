@@ -12,6 +12,7 @@ import vn.edu.hutech.lms_api.domain.Module;
 import vn.edu.hutech.lms_api.domain.User;
 import vn.edu.hutech.lms_api.dto.lesson.LessonRequestDTO;
 import vn.edu.hutech.lms_api.dto.lesson.LessonResponseDTO;
+import vn.edu.hutech.lms_api.exception.ForbiddenOperationException;
 import vn.edu.hutech.lms_api.repository.EnrollmentRepository;
 import vn.edu.hutech.lms_api.repository.LessonRepository;
 import vn.edu.hutech.lms_api.repository.ModuleRepository;
@@ -118,7 +119,7 @@ public class LessonServiceImpl implements LessonService {
         // 3. Nếu là Học viên (LEARNER), bắt buộc phải có Enrollment
         Optional<Enrollment> enrollment = enrollmentRepository.findByUserIdAndCourseId(currentUser.getId(), courseId);
         if (enrollment.isEmpty()) {
-            throw new RuntimeException("LỖI 403: Bạn chưa ghi danh khóa học này nên không thể xem nội dung bài học!");
+            throw new ForbiddenOperationException("Ban chua ghi danh khoa hoc nay nen khong the xem noi dung bai hoc!");
         }
     }
 
