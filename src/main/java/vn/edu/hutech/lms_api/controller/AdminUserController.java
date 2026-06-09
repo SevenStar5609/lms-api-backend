@@ -19,8 +19,10 @@ public class AdminUserController {
     private final AdminUserService adminUserService;
 
     @GetMapping
-    public ResponseEntity<Page<UserResponseDTO>> getAllUsers(Pageable pageable) {
-        return ResponseEntity.ok(adminUserService.getAllUsers(pageable));
+    public ResponseEntity<Page<UserResponseDTO>> getAllUsers(
+            @RequestParam(required = false) String role,
+            Pageable pageable) {
+        return ResponseEntity.ok(adminUserService.getUsersByRole(role, pageable));
     }
 
     @GetMapping("/{id}")

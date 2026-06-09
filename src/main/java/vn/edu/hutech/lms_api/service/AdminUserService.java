@@ -7,6 +7,7 @@ import vn.edu.hutech.lms_api.dto.user.UserResponseDTO;
 
 public interface AdminUserService {
     Page<UserResponseDTO> getAllUsers(Pageable pageable);
+    Page<UserResponseDTO> getUsersByRole(String role, Pageable pageable);
     UserResponseDTO getUserById(Long id);
     UserResponseDTO createUser(UserRequestDTO requestDTO);
     UserResponseDTO updateUser(Long id, UserRequestDTO requestDTO);

@@ -3,7 +3,9 @@ package vn.edu.hutech.lms_api.service.impl;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
-import org.springframework.stereotype.Service;
+// FileStorageServiceImpl deprecated - file upload endpoints removed
+// implementation retained for reference but not registered as Spring bean
+
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import vn.edu.hutech.lms_api.service.FileStorageService;
@@ -16,8 +18,8 @@ import java.nio.file.StandardCopyOption;
 import java.util.Objects;
 import java.util.UUID;
 
-@Service
-public class FileStorageServiceImpl implements FileStorageService {
+@Deprecated
+public class FileStorageServiceImpl implements vn.edu.hutech.lms_api.service.FileStorageService {
 
     private Path fileStorageLocation;
 

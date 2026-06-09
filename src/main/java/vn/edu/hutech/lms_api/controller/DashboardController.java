@@ -31,4 +31,10 @@ public class DashboardController {
     public ResponseEntity<List<CourseRatingStatsDTO>> getCourseRatingStats() {
         return ResponseEntity.ok(dashboardService.getCourseRatingStats());
     }
+
+    @GetMapping("/course-progress")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
+    public ResponseEntity<List<vn.edu.hutech.lms_api.dto.dashboard.CourseProgressStatsDTO>> getCourseProgressStats() {
+        return ResponseEntity.ok(dashboardService.getCourseProgressStats());
+    }
 }

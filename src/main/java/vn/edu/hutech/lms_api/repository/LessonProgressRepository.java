@@ -14,4 +14,7 @@ public interface LessonProgressRepository extends JpaRepository<LessonProgress, 
 
     // Đếm số lượng bài học đã hoàn thành của một phiếu ghi danh
     long countByEnrollmentIdAndIsCompletedTrue(Long enrollmentId);
+
+    // Lấy lần hoàn thành bài học gần nhất cho một enrollment
+    Optional<LessonProgress> findTopByEnrollmentIdAndIsCompletedTrueOrderByCompletedAtDesc(Long enrollmentId);
 }

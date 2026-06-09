@@ -15,6 +15,7 @@ import vn.edu.hutech.lms_api.domain.User;
 import vn.edu.hutech.lms_api.dto.enrollment.EnrollmentRequestDTO;
 import vn.edu.hutech.lms_api.dto.enrollment.EnrollmentResponseDTO;
 import vn.edu.hutech.lms_api.dto.enrollment.EnrollmentUpdateRequestDTO;
+import vn.edu.hutech.lms_api.exception.ForbiddenOperationException;
 import vn.edu.hutech.lms_api.repository.CourseRepository;
 import vn.edu.hutech.lms_api.repository.EnrollmentRepository;
 import vn.edu.hutech.lms_api.repository.LessonProgressRepository;
@@ -72,12 +73,14 @@ public class EnrollmentServiceImpl implements EnrollmentService {
 
     @Override
     public Page<EnrollmentResponseDTO> getUserEnrollments(Long userId, Pageable pageable) {
+        requireAdminOrInstructor();
         return enrollmentRepository.findByUserId(userId, pageable)
                 .map(this::mapToResponseDTO);
     }
 
     @Override
     public EnrollmentResponseDTO updateEnrollment(Long id, EnrollmentUpdateRequestDTO requestDTO) {
+        requireAdminOrInstructor();
         Enrollment enrollment = enrollmentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Khong tim thay du lieu ghi danh!"));
 
@@ -160,5 +163,12 @@ public class EnrollmentServiceImpl implements EnrollmentService {
         String currentUserEmail = authentication.getName();
         return userRepository.findByEmail(currentUserEmail)
                 .orElseThrow(() -> new RuntimeException("Khong tim thay thong tin tai khoan!"));
+    }
+
+    private void requireAdminOrInstructor() {
+        User currentUser = getCurrentUser();
+        if (!"ADMIN".equalsIgnoreCase(currentUser.getRole()) && !"INSTRUCTOR".equalsIgnoreCase(currentUser.getRole())) {
+            throw new ForbiddenOperationException("Chi admin hoac giang vien moi duoc thuc hien chuc nang nay!");
+        }
     }
 }

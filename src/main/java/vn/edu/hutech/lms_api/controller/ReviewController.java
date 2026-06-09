@@ -31,4 +31,10 @@ public class ReviewController {
     public ResponseEntity<ReviewResponseDTO> getMyReview(@PathVariable Long courseId) {
         return ResponseEntity.ok(reviewService.getMyReview(courseId));
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> deleteReview(@PathVariable Long id) {
+        reviewService.deleteReview(id);
+        return ResponseEntity.ok("Da xoa danh gia thanh cong.");
+    }
 }

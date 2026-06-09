@@ -12,6 +12,7 @@ import vn.edu.hutech.lms_api.domain.Course;
 import vn.edu.hutech.lms_api.domain.Enrollment;
 import vn.edu.hutech.lms_api.domain.User;
 import vn.edu.hutech.lms_api.dto.certificate.CertificateResponseDTO;
+import vn.edu.hutech.lms_api.exception.ForbiddenOperationException;
 import vn.edu.hutech.lms_api.repository.CertificateRepository;
 import vn.edu.hutech.lms_api.repository.CourseRepository;
 import vn.edu.hutech.lms_api.repository.EnrollmentRepository;
@@ -83,11 +84,16 @@ public class CertificateServiceImpl implements CertificateService {
     public CertificateResponseDTO getCertificateById(Long id) {
         Certificate certificate = certificateRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Khong tim thay du lieu chung chi voi ID: " + id));
+        User currentUser = getCurrentUser();
+        if (!canManageCertificates(currentUser) && !certificate.getUser().getId().equals(currentUser.getId())) {
+            throw new ForbiddenOperationException("Ban khong co quyen xem chung chi cua nguoi dung khac!");
+        }
         return mapToResponseDTO(certificate);
     }
 
     @Override
     public Page<CertificateResponseDTO> getUserCertificates(Long userId, Pageable pageable) {
+        requireAdminOrInstructor();
         if (!userRepository.existsById(userId)) {
             throw new RuntimeException("Khong tim thay thong tin tai khoan voi ID: " + userId);
         }
@@ -99,6 +105,7 @@ public class CertificateServiceImpl implements CertificateService {
     @Override
     @Transactional
     public void revokeCertificate(Long id) {
+        requireAdminOrInstructor();
         if (!certificateRepository.existsById(id)) {
             throw new RuntimeException("Khong tim thay du lieu chung chi voi ID: " + id);
         }
@@ -128,5 +135,16 @@ public class CertificateServiceImpl implements CertificateService {
         String currentUserEmail = authentication.getName();
         return userRepository.findByEmail(currentUserEmail)
                 .orElseThrow(() -> new RuntimeException("Khong tim thay thong tin tai khoan!"));
+    }
+
+    private void requireAdminOrInstructor() {
+        User currentUser = getCurrentUser();
+        if (!canManageCertificates(currentUser)) {
+            throw new ForbiddenOperationException("Chi admin hoac giang vien moi duoc thuc hien chuc nang nay!");
+        }
+    }
+
+    private boolean canManageCertificates(User user) {
+        return "ADMIN".equalsIgnoreCase(user.getRole()) || "INSTRUCTOR".equalsIgnoreCase(user.getRole());
     }
 }

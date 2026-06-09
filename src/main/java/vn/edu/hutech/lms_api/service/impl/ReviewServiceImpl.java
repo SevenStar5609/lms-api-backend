@@ -13,6 +13,7 @@ import vn.edu.hutech.lms_api.domain.Review;
 import vn.edu.hutech.lms_api.domain.User;
 import vn.edu.hutech.lms_api.dto.review.ReviewRequestDTO;
 import vn.edu.hutech.lms_api.dto.review.ReviewResponseDTO;
+import vn.edu.hutech.lms_api.exception.ForbiddenOperationException;
 import vn.edu.hutech.lms_api.repository.CourseRepository;
 import vn.edu.hutech.lms_api.repository.EnrollmentRepository;
 import vn.edu.hutech.lms_api.repository.ReviewRepository;
@@ -70,6 +71,22 @@ public class ReviewServiceImpl implements ReviewService {
         Review review = reviewRepository.findByUserIdAndCourseId(currentUser.getId(), courseId)
                 .orElseThrow(() -> new RuntimeException("Ban chua danh gia khoa hoc nay!"));
         return mapToResponseDTO(review);
+    }
+
+    @Override
+    @Transactional
+    public void deleteReview(Long id) {
+        User currentUser = getCurrentUser();
+        Review review = reviewRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Khong tim thay danh gia voi ID: " + id));
+
+        boolean isOwner = review.getUser().getId().equals(currentUser.getId());
+        boolean canManage = "ADMIN".equalsIgnoreCase(currentUser.getRole()) || "INSTRUCTOR".equalsIgnoreCase(currentUser.getRole());
+        if (!isOwner && !canManage) {
+            throw new ForbiddenOperationException("Ban khong co quyen xoa danh gia nay!");
+        }
+
+        reviewRepository.delete(review);
     }
 
     private ReviewResponseDTO mapToResponseDTO(Review review) {

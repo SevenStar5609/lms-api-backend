@@ -35,15 +35,21 @@ public class SecurityConfig {
                         ).permitAll()
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/quizzes/submit").hasRole("LEARNER")
+
+                        // Allow authenticated users (learners/instructors/admins) to GET quizzes and questions
+                        .requestMatchers(HttpMethod.GET, "/api/v1/quizzes/**", "/api/v1/questions/**").authenticated()
+                        // Restrict create/update/delete of quizzes/questions to instructors and admins
+                        .requestMatchers(HttpMethod.POST, "/api/v1/quizzes/**", "/api/v1/questions/**").hasAnyRole("INSTRUCTOR", "ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/quizzes/**", "/api/v1/questions/**").hasAnyRole("INSTRUCTOR", "ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/quizzes/**", "/api/v1/questions/**").hasAnyRole("INSTRUCTOR", "ADMIN")
+
                         .requestMatchers(HttpMethod.GET,
                                 "/api/v1/courses/**",
                                 "/api/v1/modules/**",
                                 "/api/v1/lessons/**",
-                                "/api/v1/quizzes/**",
                                 "/api/v1/certificates/**"
                         ).authenticated()
                         .requestMatchers("/api/v1/courses/**", "/api/v1/modules/**", "/api/v1/lessons/**").hasAnyRole("INSTRUCTOR", "ADMIN")
-                        .requestMatchers("/api/v1/quizzes/**", "/api/v1/questions/**").hasAnyRole("INSTRUCTOR", "ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/certificates/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/dashboard/**").hasAnyRole("INSTRUCTOR", "ADMIN")
                         .anyRequest().authenticated()
