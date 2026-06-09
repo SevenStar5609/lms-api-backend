@@ -25,6 +25,14 @@ public class AdminUserServiceImpl implements AdminUserService {
     }
 
     @Override
+    public Page<UserResponseDTO> getUsersByRole(String role, Pageable pageable) {
+        if (role == null || role.isBlank()) {
+            return getAllUsers(pageable);
+        }
+        return userRepository.findByRoleIgnoreCase(role, pageable).map(this::mapToResponseDTO);
+    }
+
+    @Override
     public UserResponseDTO getUserById(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Khong tim thay user voi ID: " + id));

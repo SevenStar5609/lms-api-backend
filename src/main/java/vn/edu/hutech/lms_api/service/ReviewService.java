@@ -11,4 +11,6 @@ public interface ReviewService {
     Page<ReviewResponseDTO> getCourseReviews(Long courseId, Pageable pageable);
 
     ReviewResponseDTO getMyReview(Long courseId);
+
+    void deleteReview(Long id);
 }

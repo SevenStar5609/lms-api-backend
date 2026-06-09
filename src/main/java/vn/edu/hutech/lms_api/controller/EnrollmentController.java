@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import vn.edu.hutech.lms_api.dto.enrollment.EnrollmentRequestDTO;
 import vn.edu.hutech.lms_api.dto.enrollment.EnrollmentResponseDTO;
@@ -30,11 +31,13 @@ public class EnrollmentController {
     }
 
     @GetMapping("/user/{userId}")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")
     public ResponseEntity<Page<EnrollmentResponseDTO>> getUserEnrollments(@PathVariable Long userId, Pageable pageable) {
         return ResponseEntity.ok(enrollmentService.getUserEnrollments(userId, pageable));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")
     public ResponseEntity<EnrollmentResponseDTO> updateEnrollment(
             @PathVariable Long id,
             @RequestBody EnrollmentUpdateRequestDTO requestDTO) {
@@ -42,6 +45,7 @@ public class EnrollmentController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")
     public ResponseEntity<String> deleteEnrollment(@PathVariable Long id) {
         enrollmentService.deleteEnrollment(id);
         return ResponseEntity.ok("Da huy ghi danh thanh cong ID: " + id);

@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import vn.edu.hutech.lms_api.dto.certificate.CertificateResponseDTO;
 import vn.edu.hutech.lms_api.service.CertificateService;
@@ -26,6 +27,7 @@ public class CertificateController {
     }
 
     @GetMapping("/user/{userId}")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")
     public ResponseEntity<Page<CertificateResponseDTO>> getUserCertificates(@PathVariable Long userId, Pageable pageable) {
         return ResponseEntity.ok(certificateService.getUserCertificates(userId, pageable));
     }
@@ -36,6 +38,7 @@ public class CertificateController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")
     public ResponseEntity<String> revokeCertificate(@PathVariable Long id) {
         certificateService.revokeCertificate(id);
         return ResponseEntity.ok("Da thu hoi chung chi thanh cong.");
